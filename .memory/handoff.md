@@ -3,10 +3,10 @@
 > 各エージェントは作業開始時にこのファイルを読み、作業終了時（またはフェーズ完了時）に必ず最新状態を更新してください。
 
 ## 現在のステータス
-* **現在フェーズ:** Phase 5（UI/UX 改善）完了。公開は機能充実後の予定
+* **現在フェーズ:** Phase 6（セリフ棚）最初の版を実装。公開は機能充実後の予定
 * **最終更新:** 2026-11-15
 * **ビルド状態:** `npm run build` 成功（`dist/extension.js` 34KB, `dist/webview.js` 55KB, `dist/globalTheme.css` 13KB）
-* **テスト状態:** `npm test`（6スイート・28テスト PASS）、`npm run test:bundle`（2テスト PASS）、`npx @vscode/vsce package` 成功
+* **テスト状態:** `npm test`（7スイート・40テスト PASS）、`npm run test:bundle`（2テスト PASS）
 
 ## 実装完了モジュール一覧
 1. **Core 領域 (`src/core/`):**
@@ -32,7 +32,15 @@
 * Webview 状態（`vscode.setState`）: viewport・非表示ワイヤー種別・パネル開閉・ビュー種別。
 * 実機（F5）での最終確認はまだ。ヘッドレス Chrome＋VS Code API スタブで、実データ（52ノード/102エッジ）の操作テストは実施済み。
 
+## Phase 6 の要点（2026-11-15）
+* セリフ棚（ADR-008, 仕様は `docs/specs/node-graph-and-plot.md` §8）。コア `src/core/lineShelf.ts`、ビュー `src/webview/components/LineShelfView.ts`、ホストコマンド `src/providers/lineCaptureCommand.ts`。
+* `removeNodes` / `removeNode` はセリフの参照も掃除する（`detachLinesFromNodes`）。ノードを消す処理を新設するときはこれを経由すること。
+* Delete／Backspace によるノード削除はノード表示のときだけ有効にした（セリフ棚・登場表で見えないノードを消さないため）。
+* セリフ棚の入力欄・話者選択は常設 DOM。再描画で作り直さないこと（入力途中の文字と IME が壊れる）。
+
 ## 次のステップ
+* F5 でセリフ棚の実機確認：IME 確定 Enter で誤送信しないか、Webview 内の HTML5 ドラッグ＆ドロップ、`nodePlot.captureLine` の連続入力。
+* T6-2（セリフ棚の続き）。
 * F5（Extension Development Host）で実機確認：⌘Z と Webview のキー転送、コピー＆貼り付け、IME 入力中のインライン編集。
 * `.memory/tasks.md` T5-7 の未着手候補から優先度を決めて着手。
 * VS Code の Extension Development Host（F5）または VSIX パッケージ化による実機確認、および必要に応じた UI 微調整。

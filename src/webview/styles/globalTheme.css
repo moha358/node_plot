@@ -13,6 +13,18 @@ body[data-theme="dark"] {
   --nplot-text-inverse: #111318;
   --nplot-frame-bg: rgba(136, 192, 208, 0.06);
   --nplot-frame-border: rgba(136, 192, 208, 0.35);
+  --nplot-frame-fill-strength: 13%;
+  --nplot-frame-header-strength: 26%;
+  --nplot-frame-color-gray: #9aa5b4;
+  --nplot-frame-color-blue: #5e9ae0;
+  --nplot-frame-color-teal: #4fb8b0;
+  --nplot-frame-color-green: #7fbf6a;
+  --nplot-frame-color-amber: #e6c25a;
+  --nplot-frame-color-orange: #e8935a;
+  --nplot-frame-color-rose: #e07a8a;
+  --nplot-frame-color-violet: #a98ad8;
+  --nplot-overlay-bg: rgba(10, 12, 16, 0.86);
+  --nplot-marquee-fill: rgba(136, 192, 208, 0.12);
 
   /* Node Category Colors */
   --nplot-node-note: #ebcb8b;
@@ -52,6 +64,8 @@ body[data-theme="dark"] {
   --nplot-toolbar-height: 40px;
   --nplot-inspector-width: 268px;
   --nplot-outline-height: 176px;
+  --nplot-resize-hit: 10px;
+  --nplot-matrix-cell: 26px;
 
   /* Radius & Shadows */
   --nplot-radius-sm: 4px;
@@ -74,6 +88,18 @@ body[data-theme="light"] {
   --nplot-text-inverse: #ffffff;
   --nplot-frame-bg: rgba(59, 130, 246, 0.06);
   --nplot-frame-border: rgba(59, 130, 246, 0.38);
+  --nplot-frame-fill-strength: 11%;
+  --nplot-frame-header-strength: 22%;
+  --nplot-frame-color-gray: #64748b;
+  --nplot-frame-color-blue: #2563eb;
+  --nplot-frame-color-teal: #0d9488;
+  --nplot-frame-color-green: #16a34a;
+  --nplot-frame-color-amber: #ca8a04;
+  --nplot-frame-color-orange: #ea580c;
+  --nplot-frame-color-rose: #e11d48;
+  --nplot-frame-color-violet: #7c3aed;
+  --nplot-overlay-bg: rgba(243, 244, 246, 0.92);
+  --nplot-marquee-fill: rgba(37, 99, 235, 0.1);
 
   --nplot-node-note: #d97706;
   --nplot-node-scene: #2563eb;
@@ -107,6 +133,18 @@ body[data-theme="sepia"] {
   --nplot-text-inverse: #fbf6e9;
   --nplot-frame-bg: rgba(140, 82, 48, 0.06);
   --nplot-frame-border: rgba(140, 82, 48, 0.38);
+  --nplot-frame-fill-strength: 12%;
+  --nplot-frame-header-strength: 24%;
+  --nplot-frame-color-gray: #7a6855;
+  --nplot-frame-color-blue: #2b5b84;
+  --nplot-frame-color-teal: #2f7a72;
+  --nplot-frame-color-green: #3b7a57;
+  --nplot-frame-color-amber: #a9791a;
+  --nplot-frame-color-orange: #b4690e;
+  --nplot-frame-color-rose: #b8332a;
+  --nplot-frame-color-violet: #7b4b94;
+  --nplot-overlay-bg: rgba(244, 236, 216, 0.92);
+  --nplot-marquee-fill: rgba(140, 82, 48, 0.1);
 
   --nplot-node-note: #b4690e;
   --nplot-node-scene: #2b5b84;
@@ -262,6 +300,10 @@ body {
   cursor: grabbing;
 }
 
+.nplot-canvas-viewport.is-grid-hidden {
+  background-image: none;
+}
+
 /* Canvas Bottom-Right Floating Zoom HUD */
 .nplot-zoom-hud {
   position: absolute;
@@ -352,8 +394,9 @@ body {
   ry: 4px;
 }
 
-/* Group Frame */
+/* Group Frame（色・入れ子・リサイズ） */
 .nplot-frame {
+  --nplot-frame-accent: var(--nplot-frame-border);
   position: absolute;
   background: var(--nplot-frame-bg);
   border: 1.5px dashed var(--nplot-frame-border);
@@ -361,20 +404,124 @@ body {
   z-index: 1;
 }
 
+.nplot-frame[data-color] {
+  background: color-mix(in srgb, var(--nplot-frame-accent) var(--nplot-frame-fill-strength), transparent);
+  border: 1.5px solid color-mix(in srgb, var(--nplot-frame-accent) 60%, transparent);
+}
+
+.nplot-frame[data-color="gray"] { --nplot-frame-accent: var(--nplot-frame-color-gray); }
+.nplot-frame[data-color="blue"] { --nplot-frame-accent: var(--nplot-frame-color-blue); }
+.nplot-frame[data-color="teal"] { --nplot-frame-accent: var(--nplot-frame-color-teal); }
+.nplot-frame[data-color="green"] { --nplot-frame-accent: var(--nplot-frame-color-green); }
+.nplot-frame[data-color="amber"] { --nplot-frame-accent: var(--nplot-frame-color-amber); }
+.nplot-frame[data-color="orange"] { --nplot-frame-accent: var(--nplot-frame-color-orange); }
+.nplot-frame[data-color="rose"] { --nplot-frame-accent: var(--nplot-frame-color-rose); }
+.nplot-frame[data-color="violet"] { --nplot-frame-accent: var(--nplot-frame-color-violet); }
+
 .nplot-frame.is-selected {
   border-style: solid;
+  border-color: var(--nplot-accent-focus);
   box-shadow: var(--nplot-shadow-selected);
 }
 
 .nplot-frame-header {
-  padding: var(--nplot-space-1) var(--nplot-space-2);
-  font-size: var(--nplot-font-size-xs);
-  font-weight: 600;
+  height: 28px;
+  padding: 0 var(--nplot-space-3);
+  font-size: var(--nplot-font-size-sm);
+  font-weight: 700;
   color: var(--nplot-text-muted);
   cursor: move;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: var(--nplot-space-2);
+  border-top-left-radius: var(--nplot-radius-lg);
+  border-top-right-radius: var(--nplot-radius-lg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nplot-frame[data-color] .nplot-frame-header {
+  background: color-mix(in srgb, var(--nplot-frame-accent) var(--nplot-frame-header-strength), transparent);
+  color: var(--nplot-text-main);
+}
+
+.nplot-frame-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nplot-canvas-world.is-lod-compact .nplot-frame-header {
+  font-size: calc(var(--nplot-font-size-md) / max(var(--nplot-zoom, 1), 0.35) * 0.6);
+  height: auto;
+  min-height: 28px;
+}
+
+.nplot-resize-handle {
+  position: absolute;
+  z-index: 2;
+}
+
+.nplot-resize-handle.is-n,
+.nplot-resize-handle.is-s {
+  left: var(--nplot-resize-hit);
+  right: var(--nplot-resize-hit);
+  height: var(--nplot-resize-hit);
+  cursor: ns-resize;
+}
+
+.nplot-resize-handle.is-n { top: calc(var(--nplot-resize-hit) / -2); }
+.nplot-resize-handle.is-s { bottom: calc(var(--nplot-resize-hit) / -2); }
+
+.nplot-resize-handle.is-e,
+.nplot-resize-handle.is-w {
+  top: var(--nplot-resize-hit);
+  bottom: var(--nplot-resize-hit);
+  width: var(--nplot-resize-hit);
+  cursor: ew-resize;
+}
+
+.nplot-resize-handle.is-e { right: calc(var(--nplot-resize-hit) / -2); }
+.nplot-resize-handle.is-w { left: calc(var(--nplot-resize-hit) / -2); }
+
+.nplot-resize-handle.is-ne,
+.nplot-resize-handle.is-nw,
+.nplot-resize-handle.is-se,
+.nplot-resize-handle.is-sw {
+  width: calc(var(--nplot-resize-hit) * 1.6);
+  height: calc(var(--nplot-resize-hit) * 1.6);
+}
+
+.nplot-resize-handle.is-ne { top: calc(var(--nplot-resize-hit) * -0.8); right: calc(var(--nplot-resize-hit) * -0.8); cursor: nesw-resize; }
+.nplot-resize-handle.is-sw { bottom: calc(var(--nplot-resize-hit) * -0.8); left: calc(var(--nplot-resize-hit) * -0.8); cursor: nesw-resize; }
+.nplot-resize-handle.is-nw { top: calc(var(--nplot-resize-hit) * -0.8); left: calc(var(--nplot-resize-hit) * -0.8); cursor: nwse-resize; }
+.nplot-resize-handle.is-se { bottom: calc(var(--nplot-resize-hit) * -0.8); right: calc(var(--nplot-resize-hit) * -0.8); cursor: nwse-resize; }
+
+.nplot-frame.is-selected .nplot-resize-handle.is-ne::after,
+.nplot-frame.is-selected .nplot-resize-handle.is-nw::after,
+.nplot-frame.is-selected .nplot-resize-handle.is-se::after,
+.nplot-frame.is-selected .nplot-resize-handle.is-sw::after {
+  content: "";
+  position: absolute;
+  inset: 25%;
+  background: var(--nplot-surface-primary);
+  border: 2px solid var(--nplot-accent-focus);
+  border-radius: 2px;
+}
+
+body[data-resizing="n"], body[data-resizing="s"] { cursor: ns-resize; }
+body[data-resizing="e"], body[data-resizing="w"] { cursor: ew-resize; }
+body[data-resizing="ne"], body[data-resizing="sw"] { cursor: nesw-resize; }
+body[data-resizing="nw"], body[data-resizing="se"] { cursor: nwse-resize; }
+
+/* Range selection marquee */
+.nplot-marquee {
+  position: absolute;
+  display: none;
+  border: 1px dashed var(--nplot-accent-focus);
+  background: var(--nplot-marquee-fill);
+  pointer-events: none;
+  z-index: 40;
 }
 
 /* Sticky Node Card */
@@ -396,9 +543,73 @@ body {
   z-index: 15;
 }
 
+/* 確定度（決定＝実線 / 案＝破線 / 未整理＝点線・半透明） */
+.nplot-node.is-certainty-decided {
+  border: 1.5px solid var(--nplot-border-strong);
+}
+
+.nplot-node.is-certainty-proposed {
+  border: 1.5px dashed var(--nplot-border-strong);
+}
+
+.nplot-node.is-certainty-unsorted {
+  border: 1.5px dotted var(--nplot-border-strong);
+  background: color-mix(in srgb, var(--nplot-surface-primary) 82%, transparent);
+}
+
+.nplot-node-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--nplot-space-1);
+  min-width: 0;
+}
+
+.nplot-certainty-badge {
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: var(--nplot-radius-sm);
+  border: 1px solid var(--nplot-border-strong);
+  color: var(--nplot-text-muted);
+  white-space: nowrap;
+}
+
+.nplot-certainty-badge.is-decided {
+  color: var(--nplot-status-resolved);
+  border-color: var(--nplot-status-resolved);
+}
+
+.nplot-certainty-badge.is-proposed {
+  border-style: dashed;
+}
+
+.nplot-certainty-badge.is-unsorted {
+  border-style: dotted;
+}
+
+.nplot-node-resize {
+  position: absolute;
+  top: 0;
+  right: calc(var(--nplot-resize-hit) / -2);
+  width: var(--nplot-resize-hit);
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.nplot-node-resize:hover {
+  background: linear-gradient(to right, transparent 40%, var(--nplot-accent-focus) 40%, var(--nplot-accent-focus) 60%, transparent 60%);
+  opacity: 0.6;
+}
+
+.nplot-inline-input {
+  width: 100%;
+  font-size: inherit;
+  font-weight: inherit;
+  user-select: text;
+}
+
 /* Trace Highlight Mode */
-.nplot-canvas-world.is-trace-mode .nplot-node.is-trace-dimmed,
-.nplot-canvas-world.is-trace-mode .nplot-edge-group.is-trace-dimmed {
+.nplot-node.is-trace-dimmed,
+.nplot-edge-group.is-trace-dimmed {
   opacity: var(--nplot-dim-opacity);
 }
 
@@ -522,6 +733,10 @@ body {
 .nplot-chip.is-ok {
   color: var(--nplot-status-resolved);
   border-color: var(--nplot-status-resolved);
+}
+
+.nplot-chip.is-tag {
+  border-style: dashed;
 }
 
 /* Semantic Zoom (LOD) when zoomed out */
@@ -758,3 +973,441 @@ body {
 }
 
 
+
+/* Bottom-Left Wire Legend（ワイヤー種別の表示切替） */
+.nplot-wire-legend {
+  position: absolute;
+  left: var(--nplot-space-3);
+  bottom: var(--nplot-space-3);
+  background: var(--nplot-surface-primary);
+  border: 1px solid var(--nplot-border-strong);
+  border-radius: var(--nplot-radius-md);
+  box-shadow: var(--nplot-shadow-card);
+  padding: 4px var(--nplot-space-2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 22;
+}
+
+.nplot-wire-legend-title {
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+  margin-right: 2px;
+}
+
+.nplot-wire-toggle:not(.is-active) {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+/* Toast */
+.nplot-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  transform: translate(-50%, 8px);
+  max-width: min(560px, 80%);
+  background: var(--nplot-surface-elevated);
+  color: var(--nplot-text-main);
+  border: 1px solid var(--nplot-border-strong);
+  border-radius: var(--nplot-radius-md);
+  box-shadow: var(--nplot-shadow-card);
+  padding: 6px var(--nplot-space-3);
+  font-size: var(--nplot-font-size-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 50;
+}
+
+.nplot-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.nplot-toast[data-kind="warning"] {
+  border-color: var(--nplot-status-warning);
+}
+
+/* Parse error overlay */
+.nplot-parse-error {
+  position: absolute;
+  inset: 0;
+  background: var(--nplot-overlay-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nplot-space-3);
+  padding: var(--nplot-space-4);
+  text-align: center;
+  z-index: 45;
+}
+
+.nplot-parse-error.is-hidden {
+  display: none;
+}
+
+.nplot-parse-error-title {
+  font-size: var(--nplot-font-size-lg);
+  font-weight: 700;
+  color: var(--nplot-status-unresolved);
+}
+
+.nplot-parse-error-message {
+  font-family: var(--nplot-font-mono);
+  font-size: var(--nplot-font-size-sm);
+  max-width: 640px;
+  user-select: text;
+}
+
+/* Inspector helpers */
+.nplot-panel-topbar {
+  justify-content: space-between;
+}
+
+.nplot-field-row.is-wrap {
+  flex-wrap: wrap;
+}
+
+.nplot-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.nplot-kv-key {
+  width: 40%;
+}
+
+.nplot-kv-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.nplot-help {
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+  line-height: 1.5;
+}
+
+.nplot-breadcrumb {
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-main);
+  background: var(--nplot-surface-secondary);
+  border: 1px solid var(--nplot-border-subtle);
+  border-radius: var(--nplot-radius-sm);
+  padding: 3px 7px;
+  word-break: break-word;
+}
+
+.nplot-callout {
+  border: 1px solid var(--nplot-accent-focus);
+  border-radius: var(--nplot-radius-md);
+  padding: var(--nplot-space-2);
+}
+
+.nplot-btn.is-primary {
+  border-color: var(--nplot-accent-focus);
+  color: var(--nplot-accent-focus);
+  justify-content: center;
+}
+
+.nplot-btn.is-danger:hover {
+  border-color: var(--nplot-status-unresolved);
+  color: var(--nplot-status-unresolved);
+}
+
+.nplot-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.nplot-select.is-active {
+  border-color: var(--nplot-accent-focus);
+  color: var(--nplot-accent-focus);
+}
+
+.nplot-segmented {
+  display: flex;
+  border: 1px solid var(--nplot-border-subtle);
+  border-radius: var(--nplot-radius-sm);
+  overflow: hidden;
+}
+
+.nplot-segmented-btn {
+  flex: 1;
+  background: var(--nplot-surface-secondary);
+  color: var(--nplot-text-muted);
+  border: none;
+  border-right: 1px solid var(--nplot-border-subtle);
+  padding: 3px 4px;
+  font-size: var(--nplot-font-size-xs);
+  cursor: pointer;
+}
+
+.nplot-segmented-btn:last-child {
+  border-right: none;
+}
+
+.nplot-segmented-btn.is-active {
+  background: var(--nplot-surface-elevated);
+  color: var(--nplot-accent-focus);
+  font-weight: 700;
+}
+
+.nplot-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nplot-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--nplot-border-subtle);
+  cursor: pointer;
+  background: var(--nplot-surface-secondary);
+  padding: 0;
+}
+
+.nplot-swatch[data-color="none"] {
+  background: linear-gradient(135deg, transparent 45%, var(--nplot-status-unresolved) 45%, var(--nplot-status-unresolved) 55%, transparent 55%), var(--nplot-surface-secondary);
+}
+
+.nplot-swatch[data-color="gray"] { background: var(--nplot-frame-color-gray); }
+.nplot-swatch[data-color="blue"] { background: var(--nplot-frame-color-blue); }
+.nplot-swatch[data-color="teal"] { background: var(--nplot-frame-color-teal); }
+.nplot-swatch[data-color="green"] { background: var(--nplot-frame-color-green); }
+.nplot-swatch[data-color="amber"] { background: var(--nplot-frame-color-amber); }
+.nplot-swatch[data-color="orange"] { background: var(--nplot-frame-color-orange); }
+.nplot-swatch[data-color="rose"] { background: var(--nplot-frame-color-rose); }
+.nplot-swatch[data-color="violet"] { background: var(--nplot-frame-color-violet); }
+
+.nplot-swatch.is-active {
+  border-color: var(--nplot-text-main);
+  box-shadow: 0 0 0 2px var(--nplot-accent-focus);
+}
+
+.nplot-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.nplot-member-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  background: transparent;
+  color: var(--nplot-text-main);
+  border: 1px solid transparent;
+  border-radius: var(--nplot-radius-sm);
+  padding: 2px 6px;
+  font-size: var(--nplot-font-size-xs);
+  cursor: pointer;
+}
+
+.nplot-member-item:hover {
+  border-color: var(--nplot-border-subtle);
+  background: var(--nplot-surface-secondary);
+}
+
+.nplot-member-item.is-frame {
+  cursor: default;
+  color: var(--nplot-text-muted);
+}
+
+/* Appearance Matrix View（登場表） */
+.nplot-matrix-view {
+  flex: 1;
+  overflow: auto;
+  background: var(--nplot-canvas-bg);
+  padding: var(--nplot-space-2) var(--nplot-space-3);
+}
+
+.nplot-matrix-view.is-hidden {
+  display: none;
+}
+
+.nplot-matrix-legend {
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+  margin-bottom: var(--nplot-space-2);
+  position: sticky;
+  left: 0;
+}
+
+.nplot-matrix-empty {
+  color: var(--nplot-text-muted);
+  padding: var(--nplot-space-4);
+}
+
+.nplot-matrix-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--nplot-font-size-xs);
+}
+
+.nplot-matrix-table th,
+.nplot-matrix-table td {
+  border-right: 1px solid var(--nplot-border-subtle);
+  border-bottom: 1px solid var(--nplot-border-subtle);
+  background: var(--nplot-surface-primary);
+}
+
+.nplot-matrix-corner {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  min-width: 160px;
+  color: var(--nplot-text-muted);
+  font-weight: 600;
+  text-align: left;
+  padding: 4px 8px;
+}
+
+.nplot-matrix-chapter {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 3px 6px;
+  color: var(--nplot-text-muted);
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 1px;
+}
+
+.nplot-matrix-scene {
+  position: sticky;
+  top: 23px;
+  z-index: 2;
+  width: var(--nplot-matrix-cell);
+  min-width: var(--nplot-matrix-cell);
+  height: 150px;
+  vertical-align: bottom;
+  padding: 4px 0;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.nplot-matrix-scene:hover {
+  background: var(--nplot-surface-elevated);
+}
+
+.nplot-matrix-scene.is-pov-unmatched .nplot-matrix-scene-num {
+  color: var(--nplot-status-warning);
+}
+
+.nplot-matrix-scene-num {
+  display: block;
+  font-family: var(--nplot-font-mono);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.nplot-matrix-scene-label {
+  writing-mode: vertical-rl;
+  display: inline-block;
+  max-height: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--nplot-text-main);
+}
+
+.nplot-matrix-stat-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 3px 6px;
+  color: var(--nplot-text-muted);
+  white-space: nowrap;
+}
+
+.nplot-matrix-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  padding: 0 8px;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.nplot-matrix-name:hover {
+  color: var(--nplot-accent-focus);
+}
+
+.nplot-matrix-group-row th {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  padding: 4px 8px;
+  background: var(--nplot-surface-secondary);
+  color: var(--nplot-text-muted);
+  font-weight: 700;
+}
+
+.nplot-matrix-cell {
+  width: var(--nplot-matrix-cell);
+  height: var(--nplot-matrix-cell);
+  padding: 0;
+  text-align: center;
+}
+
+.nplot-matrix-cell button {
+  width: 100%;
+  height: var(--nplot-matrix-cell);
+  border: none;
+  background: transparent;
+  color: var(--nplot-socket-character);
+  font-size: var(--nplot-font-size-md);
+  cursor: pointer;
+  padding: 0;
+}
+
+.nplot-matrix-cell button:hover {
+  background: var(--nplot-surface-elevated);
+}
+
+.nplot-matrix-cell.is-appear {
+  background: color-mix(in srgb, var(--nplot-socket-character) 14%, var(--nplot-surface-primary));
+}
+
+.nplot-matrix-cell.is-pov button {
+  color: var(--nplot-accent-focus);
+  font-weight: 700;
+}
+
+.nplot-matrix-cell.is-pov-only button {
+  color: var(--nplot-status-warning);
+}
+
+.nplot-matrix-stat {
+  text-align: center;
+  font-family: var(--nplot-font-mono);
+  padding: 0 6px;
+  color: var(--nplot-text-muted);
+}
+
+.nplot-matrix-foot th,
+.nplot-matrix-foot td {
+  background: var(--nplot-surface-secondary);
+}
+
+.nplot-canvas-column > .nplot-parse-error {
+  position: absolute;
+}

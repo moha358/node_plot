@@ -40,11 +40,16 @@ export class EdgeRenderer {
     socketPositions: Map<string, SocketPosition>,
     selectedEdgeId: string | null,
     activeTraceEdgeIds: Set<string> | null,
-    tempWire: TempWireState | null
+    tempWire: TempWireState | null,
+    hiddenWireTypes: ReadonlySet<SocketDataType> = new Set(),
+    dimmedNodeIds: ReadonlySet<string> = new Set()
   ): void {
     this.svgElement.innerHTML = '';
 
     for (const edge of doc.edges) {
+      if (hiddenWireTypes.has(edge.dataType) && edge.id !== selectedEdgeId) {
+        continue;
+      }
       const fromKey = `${edge.fromNodeId}:${edge.fromSocketId}`;
       const toKey = `${edge.toNodeId}:${edge.toSocketId}`;
       const p1 = socketPositions.get(fromKey);
@@ -59,7 +64,10 @@ export class EdgeRenderer {
       const y2 = p2.y + SVG_OFFSET;
 
       const group = document.createElementNS(SVG_NS, 'g');
-      const isDimmed = activeTraceEdgeIds !== null && !activeTraceEdgeIds.has(edge.id);
+      const isDimmed =
+        (activeTraceEdgeIds !== null && !activeTraceEdgeIds.has(edge.id)) ||
+        (activeTraceEdgeIds === null &&
+          (dimmedNodeIds.has(edge.fromNodeId) || dimmedNodeIds.has(edge.toNodeId)));
       group.setAttribute(
         'class',
         `nplot-edge-group ${isDimmed ? 'is-trace-dimmed' : ''}`
@@ -80,6 +88,9 @@ export class EdgeRenderer {
       path.style.stroke = SOCKET_TYPE_META[edge.dataType].cssColorVar;
 
       path.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) {
+          return;
+        }
         e.stopPropagation();
         this.onSelectEdge(edge.id);
       });

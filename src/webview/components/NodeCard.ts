@@ -1,5 +1,5 @@
 import { getForeshadowNodeStatus } from '../../core/plotAnalyzer';
-import { NODE_CATEGORY_META, SOCKET_TYPE_META } from '../../core/theme';
+import { CERTAINTY_META, NODE_CATEGORY_META, SOCKET_TYPE_META } from '../../core/theme';
 import {
   NodeCategory,
   PlotDocument,
@@ -7,13 +7,16 @@ import {
   PlotSocket,
   SocketDataType,
 } from '../../core/types';
+import { startInlineEdit } from './inlineEdit';
 
 export interface NodeCardCallbacks {
-  onSelectNode: (nodeId: string) => void;
+  onNodePointerDown: (nodeId: string, e: PointerEvent) => void;
   onStartDragNode: (nodeId: string, e: PointerEvent) => void;
+  onStartResizeNode: (nodeId: string, e: PointerEvent) => void;
+  onResetNodeWidth: (nodeId: string) => void;
+  onRenameNode: (nodeId: string, title: string) => void;
   onPromoteCategory: (nodeId: string, newCategory: NodeCategory) => void;
   onStartSocketDrag: (nodeId: string, socket: PlotSocket, e: PointerEvent) => void;
-  onCompleteSocketDrop: (nodeId: string, socket: PlotSocket) => void;
   onOpenManuscript: (node: PlotNode) => void;
 }
 
@@ -23,25 +26,35 @@ export interface ActiveSocketDragInfo {
   dataType: SocketDataType;
 }
 
+/**
+ * ノードカードの DOM を生成する。選択・減光・接続候補ハイライトなどの「状態による装飾」は
+ * CanvasViewport.applyDecorations がクラス付け替えで行う（DOM 再生成を避けダブルクリック等を壊さないため）。
+ */
 export function createNodeCardElement(
   doc: PlotDocument,
   node: PlotNode,
-  isSelected: boolean,
-  isDimmed: boolean,
-  activeSocketDrag: ActiveSocketDragInfo | null,
+  interactive: boolean,
   callbacks: NodeCardCallbacks
 ): HTMLElement {
   const card = document.createElement('article');
-  card.className = `nplot-node ${isSelected ? 'is-selected' : ''} ${
-    isDimmed ? 'is-trace-dimmed' : ''
-  }`;
+  card.className = 'nplot-node';
+  if (node.certainty) {
+    card.classList.add(`is-certainty-${node.certainty}`);
+  }
   card.dataset.nodeId = node.id;
+  card.dataset.category = node.category;
   card.style.left = `${node.x}px`;
   card.style.top = `${node.y}px`;
+  if (node.width) {
+    card.style.width = `${node.width}px`;
+  }
 
   card.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) {
+      return;
+    }
     e.stopPropagation();
-    callbacks.onSelectNode(node.id);
+    callbacks.onNodePointerDown(node.id, e);
   });
 
   // Header
@@ -49,43 +62,64 @@ export function createNodeCardElement(
   const header = document.createElement('div');
   header.className = 'nplot-node-header';
   header.addEventListener('pointerdown', (e) => {
-    if ((e.target as HTMLElement).tagName === 'SELECT') {
+    if (e.button !== 0 || (e.target as HTMLElement).tagName === 'SELECT') {
       return;
     }
     e.stopPropagation();
-    callbacks.onSelectNode(node.id);
+    callbacks.onNodePointerDown(node.id, e);
     callbacks.onStartDragNode(node.id, e);
   });
 
+  const headerLeft = document.createElement('div');
+  headerLeft.className = 'nplot-node-header-left';
   const badge = document.createElement('span');
   badge.className = 'nplot-node-badge';
   badge.style.background = meta.cssColorVar;
   badge.textContent = meta.badgeText;
-  header.appendChild(badge);
+  headerLeft.appendChild(badge);
 
-  // Category switcher (1-click promotion from sticky note to scene/character/foreshadow/item)
-  const categorySelect = document.createElement('select');
-  categorySelect.className = 'nplot-select';
-  categorySelect.title = 'ノード種別を切り替え（メモ付箋からシーンや伏線へ昇格可能）';
-  const allCats: NodeCategory[] = ['note', 'scene', 'character', 'foreshadow', 'world_item'];
-  for (const c of allCats) {
-    const opt = document.createElement('option');
-    opt.value = c;
-    opt.textContent = NODE_CATEGORY_META[c].label;
-    opt.selected = node.category === c;
-    categorySelect.appendChild(opt);
+  if (node.certainty) {
+    const cBadge = document.createElement('span');
+    cBadge.className = `nplot-certainty-badge is-${node.certainty}`;
+    cBadge.textContent = CERTAINTY_META[node.certainty].label;
+    cBadge.title = CERTAINTY_META[node.certainty].description;
+    headerLeft.appendChild(cBadge);
   }
-  categorySelect.addEventListener('change', (e) => {
-    e.stopPropagation();
-    callbacks.onPromoteCategory(node.id, categorySelect.value as NodeCategory);
-  });
-  header.appendChild(categorySelect);
+  header.appendChild(headerLeft);
+
+  if (interactive) {
+    // Category switcher (1-click promotion from sticky note to scene/character/foreshadow/item)
+    const categorySelect = document.createElement('select');
+    categorySelect.className = 'nplot-select';
+    categorySelect.title = 'ノード種別を切り替え（メモ付箋からシーンや伏線へ昇格可能）';
+    const allCats: NodeCategory[] = ['note', 'scene', 'character', 'foreshadow', 'world_item'];
+    for (const c of allCats) {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = NODE_CATEGORY_META[c].label;
+      opt.selected = node.category === c;
+      categorySelect.appendChild(opt);
+    }
+    categorySelect.addEventListener('pointerdown', (e) => e.stopPropagation());
+    categorySelect.addEventListener('change', (e) => {
+      e.stopPropagation();
+      callbacks.onPromoteCategory(node.id, categorySelect.value as NodeCategory);
+    });
+    header.appendChild(categorySelect);
+  }
   card.appendChild(header);
 
   // Title & Body
   const titleEl = document.createElement('div');
   titleEl.className = 'nplot-node-title-row';
   titleEl.textContent = node.title || '（無題）';
+  if (interactive) {
+    titleEl.title = 'ダブルクリックでタイトルを編集';
+    titleEl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      startInlineEdit(titleEl, node.title, (next) => callbacks.onRenameNode(node.id, next));
+    });
+  }
   card.appendChild(titleEl);
 
   if (node.body.trim()) {
@@ -114,31 +148,21 @@ export function createNodeCardElement(
       pin.className = 'nplot-socket-pin';
       pin.dataset.nodeId = node.id;
       pin.dataset.socketId = sock.id;
+      pin.dataset.dataType = sock.dataType;
+      pin.dataset.direction = sock.direction;
       pin.style.color = sockMeta.cssColorVar;
       pin.textContent = sockMeta.symbol;
       pin.title = `${sock.label} (${sockMeta.label})`;
 
-      if (activeSocketDrag) {
-        const isCompatible =
-          sock.direction === 'in' &&
-          node.id !== activeSocketDrag.fromNodeId &&
-          sock.dataType === activeSocketDrag.dataType;
-        pin.classList.add(
-          isCompatible ? 'is-compatible-target' : 'is-incompatible-target'
-        );
-      }
-
-      if (sock.direction === 'out') {
+      if (interactive && sock.direction === 'out') {
         pin.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0) {
+            return;
+          }
           e.stopPropagation();
           callbacks.onStartSocketDrag(node.id, sock, e);
         });
       }
-
-      pin.addEventListener('pointerup', (e) => {
-        e.stopPropagation();
-        callbacks.onCompleteSocketDrop(node.id, sock);
-      });
 
       const labelSpan = document.createElement('span');
       labelSpan.className = 'nplot-socket-label';
@@ -172,6 +196,12 @@ export function createNodeCardElement(
       chip.textContent = sp.chapter;
       paramsFooter.appendChild(chip);
     }
+    if (sp.pov) {
+      const chip = document.createElement('span');
+      chip.className = 'nplot-chip';
+      chip.textContent = `視点: ${sp.pov}`;
+      paramsFooter.appendChild(chip);
+    }
     if (sp.timepoint) {
       const chip = document.createElement('span');
       chip.className = 'nplot-chip';
@@ -189,6 +219,7 @@ export function createNodeCardElement(
       msBtn.className = 'nplot-btn';
       msBtn.textContent = `📄 ${sp.manuscriptPath}`;
       msBtn.title = 'クリックして Genkou Sheet（またはエディタ）で原稿を開く';
+      msBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
       msBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         callbacks.onOpenManuscript(node);
@@ -216,6 +247,13 @@ export function createNodeCardElement(
     paramsFooter.appendChild(chip);
   }
 
+  for (const tag of node.tags) {
+    const chip = document.createElement('span');
+    chip.className = 'nplot-chip is-tag';
+    chip.textContent = `#${tag}`;
+    paramsFooter.appendChild(chip);
+  }
+
   for (const cp of node.customParams) {
     const chip = document.createElement('span');
     chip.className = 'nplot-chip';
@@ -225,6 +263,25 @@ export function createNodeCardElement(
 
   if (paramsFooter.childElementCount > 0) {
     card.appendChild(paramsFooter);
+  }
+
+  if (interactive) {
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'nplot-node-resize';
+    resizeHandle.title = 'ドラッグで幅を変更（ダブルクリックで標準幅に戻す）';
+    resizeHandle.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) {
+        return;
+      }
+      e.stopPropagation();
+      callbacks.onNodePointerDown(node.id, e);
+      callbacks.onStartResizeNode(node.id, e);
+    });
+    resizeHandle.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      callbacks.onResetNodeWidth(node.id);
+    });
+    card.appendChild(resizeHandle);
   }
 
   return card;

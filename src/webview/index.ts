@@ -5,7 +5,10 @@ import {
   PlotDocument,
   WebviewToHostMessage,
 } from '../core/types';
-import { InteractionController } from './components/InteractionController';
+import {
+  InteractionController,
+  PersistedViewState,
+} from './components/InteractionController';
 
 declare function acquireVsCodeApi(): {
   postMessage: (msg: WebviewToHostMessage) => void;
@@ -66,8 +69,24 @@ function bootstrap(): void {
           type: 'OPEN_IN_TEXT_EDITOR',
         });
       },
+      saveViewState: (state) => {
+        try {
+          vscode.setState(state);
+        } catch {
+          // 状態保存に失敗しても編集は継続できる
+        }
+      },
     }
   );
+
+  const readSavedState = (): PersistedViewState | undefined => {
+    try {
+      const raw = vscode.getState();
+      return raw && typeof raw === 'object' ? (raw as PersistedViewState) : undefined;
+    } catch {
+      return undefined;
+    }
+  };
 
   const mainArea = document.createElement('div');
   mainArea.className = 'nplot-main-area';
@@ -75,7 +94,9 @@ function bootstrap(): void {
   const canvasCol = document.createElement('div');
   canvasCol.className = 'nplot-canvas-column';
   canvasCol.appendChild(controller.canvasViewport.viewportElement);
+  canvasCol.appendChild(controller.matrixView.element);
   canvasCol.appendChild(controller.jsonViewElement);
+  canvasCol.appendChild(controller.parseErrorElement);
   canvasCol.appendChild(controller.outlinePanel.element);
 
   mainArea.appendChild(canvasCol);
@@ -93,23 +114,36 @@ function bootstrap(): void {
     switch (msg.type) {
       case 'INIT_DOCUMENT': {
         currentVersion = msg.version;
-        controller.setDocumentAndConfig(msg.document, msg.config);
+        const saved = readSavedState();
+        controller.restoreViewState(saved);
+        // パン・ズームはファイルではなく Webview 状態を優先（パンだけでファイルを変更扱いにしない）
+        controller.setDocumentAndConfig(msg.document, msg.config, {
+          keepViewport: Boolean(saved?.viewport),
+        });
         break;
       }
       case 'DOCUMENT_CHANGED': {
         currentVersion = msg.version;
-        controller.setDocumentAndConfig(msg.document);
+        controller.setDocumentAndConfig(msg.document, undefined, { keepViewport: true });
         break;
       }
       case 'EDIT_RESULT': {
         currentVersion = msg.version;
         if (!msg.accepted && msg.document) {
-          controller.setDocumentAndConfig(msg.document);
+          controller.setDocumentAndConfig(msg.document, undefined, { keepViewport: true });
         }
         break;
       }
+      case 'PARSE_ERROR': {
+        currentVersion = msg.version;
+        if (msg.config) {
+          controller.restoreViewState(readSavedState());
+        }
+        controller.setParseError(msg.message, msg.config);
+        break;
+      }
       case 'CONFIG_CHANGED': {
-        document.body.dataset.theme = msg.config.theme;
+        controller.applyConfig(msg.config);
         break;
       }
       case 'FOCUS_NODE': {

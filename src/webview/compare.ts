@@ -67,66 +67,73 @@ function createComparePane(
 
   let currentVp: ViewportState = { ...doc.viewport };
 
-  const viewport = new CanvasViewport({
-    onSelectNode: noop,
-    onSelectEdge: noop,
-    onSelectFrame: noop,
-    onDoubleClickCanvas: noop,
-    onStartPan: (startEvent) => {
-      const startX = startEvent.clientX;
-      const startY = startEvent.clientY;
-      const initPanX = currentVp.panX;
-      const initPanY = currentVp.panY;
-      const onMove = (ev: PointerEvent) => {
+  const viewport = new CanvasViewport(
+    {
+      onBackgroundPointerDown: (startEvent) => {
+        const startX = startEvent.clientX;
+        const startY = startEvent.clientY;
+        const initPanX = currentVp.panX;
+        const initPanY = currentVp.panY;
+        const onMove = (ev: PointerEvent) => {
+          onViewportChanged({
+            ...currentVp,
+            panX: Math.round(initPanX + (ev.clientX - startX)),
+            panY: Math.round(initPanY + (ev.clientY - startY)),
+          });
+        };
+        const onUp = () => {
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+        };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      },
+      onDoubleClickCanvas: noop,
+      onWheelZoom: (e) => {
+        const rect = viewport.viewportElement.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        const oldZoom = currentVp.zoom;
+        const clampedDelta = Math.max(-20, Math.min(20, e.deltaY));
+        const factor = Math.exp(-clampedDelta * (e.ctrlKey ? 0.0032 : 0.0012));
+        const newZoom = Math.max(
+          0.25,
+          Math.min(2.0, Math.round(oldZoom * factor * 1000) / 1000)
+        );
+        if (newZoom === oldZoom) return;
+        const worldX = (cursorX - currentVp.panX) / oldZoom;
+        const worldY = (cursorY - currentVp.panY) / oldZoom;
         onViewportChanged({
-          ...currentVp,
-          panX: Math.round(initPanX + (ev.clientX - startX)),
-          panY: Math.round(initPanY + (ev.clientY - startY)),
+          panX: Math.round(cursorX - worldX * newZoom),
+          panY: Math.round(cursorY - worldY * newZoom),
+          zoom: newZoom,
         });
-      };
-      const onUp = () => {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-      };
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
+      },
+      onSetZoomLevel: (newZoom) => {
+        onViewportChanged({ ...currentVp, zoom: newZoom });
+      },
+      onFitView: () => {
+        onViewportChanged({ panX: 16, panY: 16, zoom: 0.75 });
+      },
+      onResetZoom: () => {
+        onViewportChanged({ panX: 16, panY: 16, zoom: 1.0 });
+      },
+      onNodePointerDown: noop,
+      onStartDragNode: noop,
+      onStartResizeNode: noop,
+      onResetNodeWidth: noop,
+      onRenameNode: noop,
+      onFramePointerDown: noop,
+      onStartResizeFrame: noop,
+      onRenameFrame: noop,
+      onEdgePointerDown: noop,
+      onPromoteCategory: noop,
+      onStartSocketDrag: noop,
+      onOpenManuscript: noop,
+      onToggleWireType: noop,
     },
-    onWheelZoom: (e) => {
-      const rect = viewport.viewportElement.getBoundingClientRect();
-      const cursorX = e.clientX - rect.left;
-      const cursorY = e.clientY - rect.top;
-      const oldZoom = currentVp.zoom;
-      const clampedDelta = Math.max(-20, Math.min(20, e.deltaY));
-      const factor = Math.exp(-clampedDelta * (e.ctrlKey ? 0.0032 : 0.0012));
-      const newZoom = Math.max(
-        0.25,
-        Math.min(2.0, Math.round(oldZoom * factor * 1000) / 1000)
-      );
-      if (newZoom === oldZoom) return;
-      const worldX = (cursorX - currentVp.panX) / oldZoom;
-      const worldY = (cursorY - currentVp.panY) / oldZoom;
-      onViewportChanged({
-        panX: Math.round(cursorX - worldX * newZoom),
-        panY: Math.round(cursorY - worldY * newZoom),
-        zoom: newZoom,
-      });
-    },
-    onSetZoomLevel: (newZoom) => {
-      onViewportChanged({ ...currentVp, zoom: newZoom });
-    },
-    onFitView: () => {
-      onViewportChanged({ panX: 16, panY: 16, zoom: 0.75 });
-    },
-    onResetZoom: () => {
-      onViewportChanged({ panX: 16, panY: 16, zoom: 1.0 });
-    },
-    onStartDragNode: noop,
-    onStartDragFrame: noop,
-    onPromoteCategory: noop,
-    onStartSocketDrag: noop,
-    onCompleteSocketDrop: noop,
-    onOpenManuscript: noop,
-  });
+    false
+  );
 
   pane.appendChild(viewport.viewportElement);
   container.appendChild(pane);
@@ -135,14 +142,18 @@ function createComparePane(
     currentVp = vp;
     viewport.render(
       { ...doc, viewport: vp },
-      config,
-      null,
-      null,
-      null,
-      '',
-      false,
-      null,
-      null
+      {
+        selectedNodeIds: new Set(),
+        selectedEdgeId: null,
+        selectedFrameId: null,
+        filterQuery: '',
+        certaintyFilter: 'all',
+        traceModeEnabled: false,
+        hiddenWireTypes: new Set(),
+        activeSocketDrag: null,
+        tempWire: null,
+        gridSize: config.gridSize || 20,
+      }
     );
     applyChangedHighlights(viewport, changedNodeIds);
   };

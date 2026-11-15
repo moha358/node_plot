@@ -336,17 +336,43 @@ function sanitizeNode(raw: unknown, idx: number): PlotNode | null {
   return node;
 }
 
-export function parsePlotDocument(text: string): PlotDocument {
+export type PlotParseResult =
+  | { ok: true; document: PlotDocument; isEmpty: boolean }
+  | { ok: false; error: string };
+
+/**
+ * `.nplot` テキストを解析する。JSON 構文エラーやオブジェクト以外の値では `ok: false` を返し、
+ * サンプルドキュメントへのすり替え（＝編集時の上書き事故）を起こさない。
+ * 空ファイルのみ新規作成とみなし初期ドキュメントを返す。
+ */
+export function tryParsePlotDocument(text: string): PlotParseResult {
   const trimmed = text.trim();
   if (!trimmed) {
-    return createInitialPlotDocument();
+    return { ok: true, document: createInitialPlotDocument(), isEmpty: true };
   }
-
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== 'object') {
-      return createInitialPlotDocument();
-    }
+    parsed = JSON.parse(trimmed);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { ok: false, error: 'プロットファイルの最上位が JSON オブジェクトではありません。' };
+  }
+  return { ok: true, document: normalizePlotObject(parsed as Record<string, unknown>), isEmpty: false };
+}
+
+/**
+ * 後方互換の簡易パーサ。解析できない場合は初期ドキュメントを返す（一覧表示・バックアップ要約など読み取り専用用途向け）。
+ * 編集フローでは必ず `tryParsePlotDocument` を使うこと。
+ */
+export function parsePlotDocument(text: string): PlotDocument {
+  const result = tryParsePlotDocument(text);
+  return result.ok ? result.document : createInitialPlotDocument();
+}
+
+function normalizePlotObject(parsed: Record<string, unknown>): PlotDocument {
+  {
 
     const nodes: PlotNode[] = [];
     const seenNodeIds = new Set<string>();
@@ -445,8 +471,6 @@ export function parsePlotDocument(text: string): PlotDocument {
       edges,
       frames,
     };
-  } catch {
-    return createInitialPlotDocument();
   }
 }
 

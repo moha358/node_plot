@@ -6,6 +6,7 @@ import {
   computeMinimalTextEdit,
   parsePlotDocument,
   serializePlotDocument,
+  tryParsePlotDocument,
 } from '../core/serializer';
 import { sanitizePlotConfig } from '../core/theme';
 import {
@@ -130,13 +131,24 @@ export class PlotEditorProvider implements vscode.CustomTextEditorProvider {
       async (message: WebviewToHostMessage) => {
         switch (message.type) {
           case 'READY': {
-            postMessage({
-              type: 'INIT_DOCUMENT',
-              document: parsePlotDocument(document.getText()),
-              config: this.readWorkspaceConfig(),
-              version: document.version,
-              fileName: path.basename(document.fileName),
-            });
+            const result = tryParsePlotDocument(document.getText());
+            if (result.ok) {
+              postMessage({
+                type: 'INIT_DOCUMENT',
+                document: result.document,
+                config: this.readWorkspaceConfig(),
+                version: document.version,
+                fileName: path.basename(document.fileName),
+              });
+            } else {
+              postMessage({
+                type: 'PARSE_ERROR',
+                message: result.error,
+                version: document.version,
+                fileName: path.basename(document.fileName),
+                config: this.readWorkspaceConfig(),
+              });
+            }
             this.onDocumentUpdatedEmitter.fire(document);
             break;
           }
@@ -190,7 +202,14 @@ export class PlotEditorProvider implements vscode.CustomTextEditorProvider {
             break;
           }
           case 'REQUEST_EXPORT': {
-            const plotDoc = parsePlotDocument(document.getText());
+            const parsedForExport = tryParsePlotDocument(document.getText());
+            if (!parsedForExport.ok) {
+              vscode.window.showErrorMessage(
+                `プロットファイルの JSON が壊れているため出力できません: ${parsedForExport.error}`
+              );
+              break;
+            }
+            const plotDoc = parsedForExport.document;
             if (message.format === 'markdown') {
               await this.exportPlotAsMarkdown(document.uri, plotDoc);
             } else if (message.format === 'sync_genkou') {
@@ -218,11 +237,20 @@ export class PlotEditorProvider implements vscode.CustomTextEditorProvider {
       if (isApplyingWebviewEdit || e.contentChanges.length === 0) {
         return;
       }
-      postMessage({
-        type: 'DOCUMENT_CHANGED',
-        document: parsePlotDocument(e.document.getText()),
-        version: e.document.version,
-      });
+      const result = tryParsePlotDocument(e.document.getText());
+      if (result.ok) {
+        postMessage({
+          type: 'DOCUMENT_CHANGED',
+          document: result.document,
+          version: e.document.version,
+        });
+      } else {
+        postMessage({
+          type: 'PARSE_ERROR',
+          message: result.error,
+          version: e.document.version,
+        });
+      }
     });
 
     const configChangeSub = vscode.workspace.onDidChangeConfiguration((e) => {

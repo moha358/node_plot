@@ -165,6 +165,14 @@ export type HostToWebviewMessage =
   | {
       type: 'FOCUS_NODE';
       nodeId: string;
+    }
+  | {
+      /** .nplot の JSON が壊れている場合。Webview は編集をブロックし、サンプルで上書きしない。 */
+      type: 'PARSE_ERROR';
+      message: string;
+      version: number;
+      fileName?: string;
+      config?: PlotConfig;
     };
 
 export type WebviewToHostMessage =

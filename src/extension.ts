@@ -10,6 +10,7 @@ import {
   CompareHostToWebviewMessage,
   CompareWebviewToHostMessage,
 } from './core/types';
+import { captureLinesCommand } from './providers/lineCaptureCommand';
 import { buildPlotWebviewHtml, PlotEditorProvider } from './providers/plotEditorProvider';
 import { PlotOutlineTreeProvider } from './providers/plotOutlineTreeProvider';
 import { StatusBarProvider } from './providers/statusBarProvider';
@@ -620,6 +621,8 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       await editorProvider.syncGenkouFromPlot(active.uri, active.doc);
     }),
+
+    vscode.commands.registerCommand('nodePlot.captureLine', () => captureLinesCommand(editorProvider)),
 
     vscode.commands.registerCommand('nodePlot.focusNode', async (uri: vscode.Uri, nodeId: string) => {
       await vscode.commands.executeCommand('vscode.openWith', uri, PlotEditorProvider.viewType);

@@ -1,0 +1,231 @@
+{
+  "name": "node-plot",
+  "displayName": "Node Plot - 物語プロット＆アイデア構築ノードエディタ",
+  "description": "小説・シナリオの構想やアイデアを付箋ノードとして書き溜め、時系列・登場人物・伏線の提示と回収をマルチソケットで視覚的に繋いで構成できるVS Code拡張機能。Genkou Sheet（原稿用紙エディタ）連携対応。",
+  "version": "0.1.0",
+  "publisher": "moha358",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/moha358/node_plot.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "novel",
+    "plot",
+    "story",
+    "node-editor",
+    "writing",
+    "小説",
+    "プロット",
+    "シナリオ",
+    "執筆"
+  ],
+  "icon": "assets/icon.png",
+  "activationEvents": [
+    "workspaceContains:.nplot.json",
+    "workspaceContains:.genkou.json"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "nodePlot.editor",
+        "displayName": "プロットノードエディタ (Node Plot)",
+        "selector": [
+          {
+            "filenamePattern": "*.nplot"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "nodePlot.enableFolder",
+        "title": "Node Plot: このフォルダーをプロットプロジェクトとして有効化"
+      },
+      {
+        "command": "nodePlot.disableFolder",
+        "title": "Node Plot: プロットプロジェクト設定を解除"
+      },
+      {
+        "command": "nodePlot.createPlotFile",
+        "title": "Node Plot: 新規プロットファイル (.nplot) を作成",
+        "icon": "$(add)"
+      },
+      {
+        "command": "nodePlot.exportMarkdown",
+        "title": "Node Plot: 時系列順の構成案 (Markdown) を書き出し",
+        "icon": "$(markdown)"
+      },
+      {
+        "command": "nodePlot.syncGenkouOrder",
+        "title": "Node Plot: シーン順序を Genkou Sheet (.genkou.json) へ同期",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "nodePlot.restoreBackup",
+        "title": "Node Plot: 自動バックアップからプロットを復元"
+      },
+      {
+        "command": "nodePlot.applyBackupInDiff",
+        "title": "Node Plot: 差分表示中のバックアップでプロットを置き換え",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "nodePlot.focusNode",
+        "title": "Node Plot: ノードへジャンプ"
+      },
+      {
+        "command": "nodePlot.refreshTree",
+        "title": "Node Plot: プロット構成ツリーを更新",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "node-plot-sidebar",
+          "title": "プロット (Node Plot)",
+          "icon": "assets/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "node-plot-sidebar": [
+        {
+          "id": "nodePlot.outlineTree",
+          "name": "プロット構成・伏線一覧",
+          "when": "nodePlot.isFolderEnabled"
+        },
+        {
+          "id": "nodePlot.welcomeView",
+          "name": "プロットプロジェクト設定",
+          "when": "!nodePlot.isFolderEnabled"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "nodePlot.welcomeView",
+        "contents": "現在のフォルダーではプロットプロジェクト設定が無効です（他のプロジェクトには影響しません）。\n[このフォルダーをプロットプロジェクトとして有効化](command:nodePlot.enableFolder)\n[新規プロットファイル (.nplot) を作成](command:nodePlot.createPlotFile)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "nodePlot.createPlotFile",
+          "when": "view == nodePlot.outlineTree",
+          "group": "navigation@1"
+        },
+        {
+          "command": "nodePlot.exportMarkdown",
+          "when": "view == nodePlot.outlineTree",
+          "group": "navigation@2"
+        },
+        {
+          "command": "nodePlot.refreshTree",
+          "when": "view == nodePlot.outlineTree",
+          "group": "navigation@3"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "nodePlot.applyBackupInDiff",
+          "when": "nodePlot.backupDiffActive",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "nodePlot.applyBackupInDiff",
+          "when": "nodePlot.backupDiffActive"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Node Plot (物語プロットノードエディタ)",
+      "properties": {
+        "nodePlot.enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "description": "このワークスペースでプロットプロジェクト機能を有効にするか"
+        },
+        "nodePlot.theme": {
+          "type": "string",
+          "enum": [
+            "dark",
+            "light",
+            "sepia"
+          ],
+          "enumDescriptions": [
+            "ダークキャンバス（標準・ノードとソケットの視認性重視）",
+            "ライトキャンバス（明るいコルク/ホワイトボード風）",
+            "セピアキャンバス（目に優しい生成り紙風）"
+          ],
+          "default": "dark",
+          "scope": "window",
+          "description": "プロットキャンバスのカラーテーマ"
+        },
+        "nodePlot.snapToGrid": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "ノード移動時にグリッド（20px単位）へスナップするか"
+        },
+        "nodePlot.gridSize": {
+          "type": "number",
+          "default": 20,
+          "minimum": 8,
+          "maximum": 64,
+          "scope": "window",
+          "description": "キャンバスのグリッド間隔（px）"
+        },
+        "nodePlot.backup.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "編集中の .nplot プロットファイルを拡張機能専用の保存領域へ自動バックアップするか"
+        },
+        "nodePlot.backup.intervalMinutes": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 120,
+          "scope": "window",
+          "description": "新しいバックアップ世代を作る間隔（分）"
+        },
+        "nodePlot.backup.maxSnapshots": {
+          "type": "number",
+          "default": 50,
+          "minimum": 1,
+          "maximum": 500,
+          "scope": "window",
+          "description": "1ファイルあたり保持するバックアップ世代数"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc --noEmit && node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "build": "tsc --noEmit && node esbuild.js --production",
+    "test": "node --import tsx --test test/**/*.test.ts",
+    "vscode:prepublish": "npm run build",
+    "test:bundle": "npm run build && node --test test/build/*.test.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "~1.85.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

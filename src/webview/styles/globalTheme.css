@@ -1,0 +1,667 @@
+:root,
+body[data-theme="dark"] {
+  /* Color Palette - Dark Theme */
+  --nplot-canvas-bg: #16181d;
+  --nplot-canvas-grid-dot: rgba(255, 255, 255, 0.11);
+  --nplot-surface-primary: #1f232b;
+  --nplot-surface-secondary: #282d37;
+  --nplot-surface-elevated: #2e3440;
+  --nplot-border-subtle: rgba(255, 255, 255, 0.12);
+  --nplot-border-strong: rgba(255, 255, 255, 0.28);
+  --nplot-text-main: #eceff4;
+  --nplot-text-muted: #9aa5b4;
+  --nplot-text-inverse: #111318;
+  --nplot-frame-bg: rgba(136, 192, 208, 0.06);
+  --nplot-frame-border: rgba(136, 192, 208, 0.35);
+
+  /* Node Category Colors */
+  --nplot-node-note: #ebcb8b;
+  --nplot-node-scene: #5e81ac;
+  --nplot-node-character: #a3be8c;
+  --nplot-node-foreshadow: #b48ead;
+  --nplot-node-item: #d08770;
+
+  /* Socket & Wire Colors (B案 4データ型) */
+  --nplot-socket-flow: #63b3ed;
+  --nplot-socket-character: #68d391;
+  --nplot-socket-foreshadow: #d6bcfa;
+  --nplot-socket-item: #f6ad55;
+
+  /* Status & Feedback Colors */
+  --nplot-status-unresolved: #fc8181;
+  --nplot-status-resolved: #68d391;
+  --nplot-status-warning: #f6e05e;
+  --nplot-accent-focus: #88c0d0;
+  --nplot-dim-opacity: 0.24;
+
+  /* Typography */
+  --nplot-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+  --nplot-font-mono: "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  --nplot-font-size-xs: 11px;
+  --nplot-font-size-sm: 12px;
+  --nplot-font-size-md: 13px;
+  --nplot-font-size-lg: 15px;
+
+  /* Spacing & Dimensions (14インチモニタ最適化) */
+  --nplot-space-1: 4px;
+  --nplot-space-2: 8px;
+  --nplot-space-3: 12px;
+  --nplot-space-4: 16px;
+  --nplot-node-width: 232px;
+  --nplot-socket-size: 13px;
+  --nplot-toolbar-height: 40px;
+  --nplot-inspector-width: 268px;
+  --nplot-outline-height: 176px;
+
+  /* Radius & Shadows */
+  --nplot-radius-sm: 4px;
+  --nplot-radius-md: 8px;
+  --nplot-radius-lg: 12px;
+  --nplot-shadow-card: 0 6px 18px rgba(0, 0, 0, 0.42);
+  --nplot-shadow-selected: 0 0 0 2px var(--nplot-accent-focus), 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+body[data-theme="light"] {
+  --nplot-canvas-bg: #f3f4f6;
+  --nplot-canvas-grid-dot: rgba(15, 23, 42, 0.14);
+  --nplot-surface-primary: #ffffff;
+  --nplot-surface-secondary: #f8fafc;
+  --nplot-surface-elevated: #e2e8f0;
+  --nplot-border-subtle: rgba(15, 23, 42, 0.14);
+  --nplot-border-strong: rgba(15, 23, 42, 0.32);
+  --nplot-text-main: #1e293b;
+  --nplot-text-muted: #64748b;
+  --nplot-text-inverse: #ffffff;
+  --nplot-frame-bg: rgba(59, 130, 246, 0.06);
+  --nplot-frame-border: rgba(59, 130, 246, 0.38);
+
+  --nplot-node-note: #d97706;
+  --nplot-node-scene: #2563eb;
+  --nplot-node-character: #16a34a;
+  --nplot-node-foreshadow: #9333ea;
+  --nplot-node-item: #ea580c;
+
+  --nplot-socket-flow: #2563eb;
+  --nplot-socket-character: #16a34a;
+  --nplot-socket-foreshadow: #9333ea;
+  --nplot-socket-item: #ea580c;
+
+  --nplot-status-unresolved: #dc2626;
+  --nplot-status-resolved: #16a34a;
+  --nplot-status-warning: #d97706;
+  --nplot-accent-focus: #2563eb;
+  --nplot-shadow-card: 0 4px 14px rgba(15, 23, 42, 0.12);
+  --nplot-shadow-selected: 0 0 0 2px var(--nplot-accent-focus), 0 8px 20px rgba(15, 23, 42, 0.18);
+}
+
+body[data-theme="sepia"] {
+  --nplot-canvas-bg: #f4ecd8;
+  --nplot-canvas-grid-dot: rgba(92, 64, 51, 0.16);
+  --nplot-surface-primary: #fbf6e9;
+  --nplot-surface-secondary: #efe4cc;
+  --nplot-surface-elevated: #e5d5b5;
+  --nplot-border-subtle: rgba(92, 64, 51, 0.18);
+  --nplot-border-strong: rgba(92, 64, 51, 0.36);
+  --nplot-text-main: #3b2f2f;
+  --nplot-text-muted: #7a6855;
+  --nplot-text-inverse: #fbf6e9;
+  --nplot-frame-bg: rgba(140, 82, 48, 0.06);
+  --nplot-frame-border: rgba(140, 82, 48, 0.38);
+
+  --nplot-node-note: #b4690e;
+  --nplot-node-scene: #2b5b84;
+  --nplot-node-character: #3b7a57;
+  --nplot-node-foreshadow: #7b4b94;
+  --nplot-node-item: #b84a39;
+
+  --nplot-socket-flow: #2b5b84;
+  --nplot-socket-character: #3b7a57;
+  --nplot-socket-foreshadow: #7b4b94;
+  --nplot-socket-item: #b84a39;
+
+  --nplot-status-unresolved: #b8332a;
+  --nplot-status-resolved: #3b7a57;
+  --nplot-status-warning: #b4690e;
+  --nplot-accent-focus: #8c5230;
+  --nplot-shadow-card: 0 4px 14px rgba(59, 47, 47, 0.14);
+  --nplot-shadow-selected: 0 0 0 2px var(--nplot-accent-focus), 0 8px 20px rgba(59, 47, 47, 0.22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--nplot-canvas-bg);
+  color: var(--nplot-text-main);
+  font-family: var(--nplot-font-sans);
+  font-size: var(--nplot-font-size-md);
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Toolbar - 14インチ画面でも絶対に縦折り返し・はみ出しを起こさない設計 */
+.nplot-toolbar {
+  min-height: var(--nplot-toolbar-height);
+  background: var(--nplot-surface-primary);
+  border-bottom: 1px solid var(--nplot-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: var(--nplot-space-1) var(--nplot-space-2);
+  gap: var(--nplot-space-2);
+  z-index: 30;
+}
+
+.nplot-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--nplot-space-1);
+  flex-wrap: nowrap;
+}
+
+.nplot-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--nplot-border-subtle);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.nplot-btn {
+  background: var(--nplot-surface-secondary);
+  color: var(--nplot-text-main);
+  border: 1px solid var(--nplot-border-subtle);
+  border-radius: var(--nplot-radius-sm);
+  padding: 3px 7px;
+  font-size: var(--nplot-font-size-xs);
+  line-height: 1.4;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nplot-space-1);
+}
+
+.nplot-btn:hover {
+  background: var(--nplot-surface-elevated);
+  border-color: var(--nplot-border-strong);
+}
+
+.nplot-btn.is-active {
+  border-color: var(--nplot-accent-focus);
+  color: var(--nplot-accent-focus);
+  background: var(--nplot-surface-elevated);
+}
+
+.nplot-input,
+.nplot-select,
+.nplot-textarea {
+  background: var(--nplot-surface-secondary);
+  color: var(--nplot-text-main);
+  border: 1px solid var(--nplot-border-subtle);
+  border-radius: var(--nplot-radius-sm);
+  padding: 3px 7px;
+  font-family: var(--nplot-font-sans);
+  font-size: var(--nplot-font-size-xs);
+}
+
+.nplot-toolbar .nplot-input {
+  width: 136px;
+}
+
+.nplot-textarea {
+  resize: vertical;
+  min-height: 60px;
+  user-select: text;
+}
+
+/* Workspace Layout */
+.nplot-main-area {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.nplot-canvas-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Infinite Canvas */
+.nplot-canvas-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  background-color: var(--nplot-canvas-bg);
+  background-image: radial-gradient(var(--nplot-canvas-grid-dot) 1.25px, transparent 1.25px);
+  background-size: 20px 20px;
+}
+
+.nplot-canvas-viewport.is-panning {
+  cursor: grabbing;
+}
+
+/* Canvas Bottom-Right Floating Zoom HUD */
+.nplot-zoom-hud {
+  position: absolute;
+  right: var(--nplot-space-3);
+  bottom: var(--nplot-space-3);
+  background: var(--nplot-surface-primary);
+  border: 1px solid var(--nplot-border-strong);
+  border-radius: var(--nplot-radius-md);
+  box-shadow: var(--nplot-shadow-card);
+  padding: 4px var(--nplot-space-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 22;
+}
+
+.nplot-zoom-slider {
+  width: 96px;
+  height: 4px;
+  accent-color: var(--nplot-accent-focus);
+  cursor: pointer;
+  margin: 0;
+}
+
+.nplot-zoom-pct {
+  min-width: 42px;
+  text-align: center;
+  font-family: var(--nplot-font-mono);
+  font-size: var(--nplot-font-size-xs);
+}
+
+.nplot-canvas-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+/* SVG Edge Layer */
+.nplot-edge-svg {
+  position: absolute;
+  top: -10000px;
+  left: -10000px;
+  width: 20000px;
+  height: 20000px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.nplot-edge-path {
+  fill: none;
+  stroke-width: 2.5px;
+  pointer-events: stroke;
+  cursor: pointer;
+  transition: opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+.nplot-edge-path:hover,
+.nplot-edge-path.is-selected {
+  stroke-width: 4px;
+}
+
+.nplot-edge-path.is-dashed {
+  stroke-dasharray: 7 5;
+}
+
+.nplot-edge-temp {
+  fill: none;
+  stroke-width: 2.5px;
+  stroke-dasharray: 5 4;
+  pointer-events: none;
+}
+
+.nplot-edge-label {
+  font-size: var(--nplot-font-size-xs);
+  fill: var(--nplot-text-main);
+  pointer-events: none;
+}
+
+.nplot-edge-label-bg {
+  fill: var(--nplot-surface-primary);
+  stroke: var(--nplot-border-subtle);
+  stroke-width: 1px;
+  rx: 4px;
+  ry: 4px;
+}
+
+/* Group Frame */
+.nplot-frame {
+  position: absolute;
+  background: var(--nplot-frame-bg);
+  border: 1.5px dashed var(--nplot-frame-border);
+  border-radius: var(--nplot-radius-lg);
+  z-index: 1;
+}
+
+.nplot-frame.is-selected {
+  border-style: solid;
+  box-shadow: var(--nplot-shadow-selected);
+}
+
+.nplot-frame-header {
+  padding: var(--nplot-space-1) var(--nplot-space-2);
+  font-size: var(--nplot-font-size-xs);
+  font-weight: 600;
+  color: var(--nplot-text-muted);
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Sticky Node Card */
+.nplot-node {
+  position: absolute;
+  width: var(--nplot-node-width);
+  background: var(--nplot-surface-primary);
+  border: 1px solid var(--nplot-border-subtle);
+  border-radius: var(--nplot-radius-md);
+  box-shadow: var(--nplot-shadow-card);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.15s ease;
+}
+
+.nplot-node.is-selected {
+  box-shadow: var(--nplot-shadow-selected);
+  z-index: 15;
+}
+
+/* Trace Highlight Mode */
+.nplot-canvas-world.is-trace-mode .nplot-node.is-trace-dimmed,
+.nplot-canvas-world.is-trace-mode .nplot-edge-group.is-trace-dimmed {
+  opacity: var(--nplot-dim-opacity);
+}
+
+.nplot-node-header {
+  padding: 3px var(--nplot-space-2);
+  border-top-left-radius: var(--nplot-radius-md);
+  border-top-right-radius: var(--nplot-radius-md);
+  border-bottom: 1px solid var(--nplot-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nplot-space-1);
+  cursor: move;
+}
+
+.nplot-node-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: var(--nplot-radius-sm);
+  color: var(--nplot-text-inverse);
+  white-space: nowrap;
+}
+
+.nplot-node-title-row {
+  padding: 6px var(--nplot-space-2) 4px;
+  font-weight: 700;
+  font-size: var(--nplot-font-size-sm);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.nplot-node-body {
+  padding: 0 var(--nplot-space-2) 6px;
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Sockets Container (B案 Multi-Socket) */
+.nplot-sockets-grid {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-top: 1px solid var(--nplot-border-subtle);
+  gap: var(--nplot-space-1);
+}
+
+.nplot-socket-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 44%;
+}
+
+.nplot-socket-col.is-out {
+  align-items: flex-end;
+}
+
+.nplot-socket-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--nplot-font-size-xs);
+  white-space: nowrap;
+  position: relative;
+  padding: 1px var(--nplot-space-1);
+}
+
+.nplot-socket-pin {
+  width: var(--nplot-socket-size);
+  height: var(--nplot-socket-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  border-radius: 50%;
+  background: var(--nplot-surface-secondary);
+  border: 2px solid currentColor;
+  flex-shrink: 0;
+  cursor: crosshair;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.nplot-socket-pin:hover,
+.nplot-socket-pin.is-compatible-target {
+  transform: scale(1.35);
+  background: currentColor;
+  color: var(--nplot-text-inverse);
+}
+
+.nplot-socket-pin.is-incompatible-target {
+  opacity: 0.22;
+}
+
+/* Node Footer & Param Chips */
+.nplot-node-params {
+  padding: 4px var(--nplot-space-2);
+  border-top: 1px solid var(--nplot-border-subtle);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.nplot-chip {
+  font-size: 10px;
+  background: var(--nplot-surface-secondary);
+  border: 1px solid var(--nplot-border-subtle);
+  border-radius: var(--nplot-radius-sm);
+  padding: 1px 5px;
+  color: var(--nplot-text-muted);
+}
+
+.nplot-chip.is-alert {
+  color: var(--nplot-status-unresolved);
+  border-color: var(--nplot-status-unresolved);
+}
+
+.nplot-chip.is-ok {
+  color: var(--nplot-status-resolved);
+  border-color: var(--nplot-status-resolved);
+}
+
+/* Semantic Zoom (LOD) when zoomed out */
+.nplot-canvas-world.is-lod-compact .nplot-node-body,
+.nplot-canvas-world.is-lod-compact .nplot-node-params,
+.nplot-canvas-world.is-lod-compact .nplot-socket-label {
+  display: none;
+}
+
+.nplot-canvas-world.is-lod-compact .nplot-node-title-row {
+  font-size: var(--nplot-font-size-md);
+  padding: var(--nplot-space-2);
+}
+
+/* Right Inspector Panel (折りたたみ対応) */
+.nplot-inspector {
+  width: var(--nplot-inspector-width);
+  flex-shrink: 0;
+  background: var(--nplot-surface-primary);
+  border-left: 1px solid var(--nplot-border-subtle);
+  padding: var(--nplot-space-2) var(--nplot-space-3);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nplot-space-2);
+  z-index: 25;
+}
+
+.nplot-inspector.is-collapsed {
+  display: none;
+}
+
+.nplot-section-title {
+  font-size: var(--nplot-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--nplot-text-muted);
+  margin-bottom: 2px;
+}
+
+.nplot-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nplot-field label {
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+}
+
+.nplot-field-row {
+  display: flex;
+  align-items: center;
+  gap: var(--nplot-space-1);
+}
+
+/* Bottom Outline & Tension Curve Drawer */
+.nplot-outline-drawer {
+  height: var(--nplot-outline-height);
+  flex-shrink: 0;
+  background: var(--nplot-surface-primary);
+  border-top: 1px solid var(--nplot-border-subtle);
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 0.95fr;
+  gap: var(--nplot-space-2);
+  padding: var(--nplot-space-2) var(--nplot-space-3);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.nplot-outline-col {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: var(--nplot-space-1);
+  min-width: 0;
+}
+
+.nplot-outline-item {
+  padding: 4px var(--nplot-space-2);
+  background: var(--nplot-surface-secondary);
+  border: 1px solid var(--nplot-border-subtle);
+  border-radius: var(--nplot-radius-sm);
+  font-size: var(--nplot-font-size-xs);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--nplot-space-1);
+}
+
+.nplot-outline-item:hover {
+  border-color: var(--nplot-accent-focus);
+}
+
+/* Backup Compare 2-Pane Split View */
+.nplot-compare-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--nplot-canvas-bg);
+}
+
+.nplot-compare-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-right: 1px solid var(--nplot-border-strong);
+}
+
+.nplot-compare-pane-header {
+  min-height: var(--nplot-toolbar-height);
+  background: var(--nplot-surface-primary);
+  border-bottom: 1px solid var(--nplot-border-subtle);
+  padding: var(--nplot-space-1) var(--nplot-space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nplot-space-2);
+  z-index: 25;
+}
+
+.nplot-compare-pane-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--nplot-font-size-xs);
+}
+
+.nplot-compare-pane-detail {
+  color: var(--nplot-text-muted);
+  font-size: 10px;
+}
+
+.nplot-node.is-diff-changed {
+  border: 2px solid var(--nplot-status-warning);
+  box-shadow: 0 0 0 2px var(--nplot-status-warning), var(--nplot-shadow-card);
+}
+

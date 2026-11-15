@@ -279,3 +279,106 @@ export function summarizePlotStats(doc: PlotDocument): PlotSummaryStats {
     hasFlowCycle: hasCycle,
   };
 }
+
+function normalizePersonName(text: string): string {
+  return text
+    .replace(/（[^）]*）|\([^)]*\)/g, '')
+    .replace(/^(主人公|視点)[:：]/, '')
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+/**
+ * シーンの POV（自由記述）がキャラクターを指しているかを判定する。
+ * 「生物学者／ロジン」のような複数視点や「（案）」付き表記にも対応し、完全一致（括弧・空白除去後）で照合する。
+ */
+export function isPovOfCharacter(pov: string, character: PlotNode): boolean {
+  const name = normalizePersonName(character.title);
+  if (!name) {
+    return false;
+  }
+  return pov
+    .split(/[／/、,，・&＆]/)
+    .map(normalizePersonName)
+    .some((token) => token.length > 0 && token === name);
+}
+
+export interface AppearanceCell {
+  appears: boolean;
+  isPov: boolean;
+}
+
+export interface AppearanceMatrix {
+  scenes: PlotNode[];
+  characters: PlotNode[];
+  /** key: `${characterId}|${sceneId}` */
+  cells: Map<string, AppearanceCell>;
+  appearanceCount: Map<string, number>;
+  povCount: Map<string, number>;
+  castCount: Map<string, number>;
+  /** POV がどのキャラクターにも一致しないシーン */
+  unmatchedPovSceneIds: Set<string>;
+}
+
+export function appearanceCellKey(characterId: string, sceneId: string): string {
+  return `${characterId}|${sceneId}`;
+}
+
+/**
+ * 登場表（キャラクター × 時系列シーン）を算出する。キャラクターの並び順は呼び出し側で指定可能
+ * （枠＝組織ごとのグルーピング順など）。省略時はキャンバス座標順。
+ */
+export function buildAppearanceMatrix(
+  doc: PlotDocument,
+  characterOrder?: PlotNode[]
+): AppearanceMatrix {
+  const { orderedScenes } = computeSceneOrder(doc);
+  const characters =
+    characterOrder ??
+    doc.nodes.filter((n) => n.category === 'character').sort(compareNodeCoordinates);
+
+  const appearing = new Set<string>();
+  for (const e of doc.edges) {
+    if (e.dataType === 'character') {
+      appearing.add(appearanceCellKey(e.fromNodeId, e.toNodeId));
+    }
+  }
+
+  const cells = new Map<string, AppearanceCell>();
+  const appearanceCount = new Map<string, number>();
+  const povCount = new Map<string, number>();
+  const castCount = new Map<string, number>();
+  const unmatchedPovSceneIds = new Set<string>();
+
+  for (const scene of orderedScenes) {
+    const pov = scene.sceneParams?.pov ?? '';
+    let povMatched = false;
+    for (const c of characters) {
+      const key = appearanceCellKey(c.id, scene.id);
+      const appears = appearing.has(key);
+      const isPov = pov.trim() !== '' && isPovOfCharacter(pov, c);
+      povMatched = povMatched || isPov;
+      cells.set(key, { appears, isPov });
+      if (appears) {
+        appearanceCount.set(c.id, (appearanceCount.get(c.id) ?? 0) + 1);
+        castCount.set(scene.id, (castCount.get(scene.id) ?? 0) + 1);
+      }
+      if (isPov) {
+        povCount.set(c.id, (povCount.get(c.id) ?? 0) + 1);
+      }
+    }
+    if (pov.trim() && !povMatched) {
+      unmatchedPovSceneIds.add(scene.id);
+    }
+  }
+
+  return {
+    scenes: orderedScenes,
+    characters,
+    cells,
+    appearanceCount,
+    povCount,
+    castCount,
+    unmatchedPovSceneIds,
+  };
+}

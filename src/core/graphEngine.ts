@@ -1,6 +1,7 @@
 import {
   EdgeLineStyle,
   NodeCategory,
+  NodeCertainty,
   PlotDocument,
   PlotEdge,
   PlotNode,
@@ -337,4 +338,175 @@ export function extractConnectedSubgraph(
   }
 
   return { nodeIds, edgeIds };
+}
+
+export function removeNodes(doc: PlotDocument, nodeIds: Iterable<string>): PlotDocument {
+  const ids = new Set(nodeIds);
+  if (ids.size === 0) {
+    return doc;
+  }
+  return {
+    ...doc,
+    nodes: doc.nodes.filter((n) => !ids.has(n.id)),
+    edges: doc.edges.filter((e) => !ids.has(e.fromNodeId) && !ids.has(e.toNodeId)),
+  };
+}
+
+/** 種別変更（昇格）で外れてしまう接続線の本数。UIでの事前通知に使う。 */
+export function countEdgesLostByPromotion(
+  doc: PlotDocument,
+  nodeId: string,
+  targetCategory: NodeCategory
+): number {
+  const before = doc.edges.length;
+  return before - promoteNodeCategory(doc, nodeId, targetCategory).edges.length;
+}
+
+/**
+ * キャラクターのシーン登場を切り替える（登場表ビュー用）。
+ * 既に接続があれば全て外し、なければ `appear_out` → `chars_in`（なければ最初の character 型端子）で接続する。
+ */
+export function toggleCharacterAppearance(
+  doc: PlotDocument,
+  characterId: string,
+  sceneId: string
+): { document: PlotDocument; appears: boolean; reason?: string } {
+  const existing = doc.edges.filter(
+    (e) => e.dataType === 'character' && e.fromNodeId === characterId && e.toNodeId === sceneId
+  );
+  if (existing.length > 0) {
+    const removeIds = new Set(existing.map((e) => e.id));
+    return {
+      document: { ...doc, edges: doc.edges.filter((e) => !removeIds.has(e.id)) },
+      appears: false,
+    };
+  }
+
+  const charNode = doc.nodes.find((n) => n.id === characterId);
+  const sceneNode = doc.nodes.find((n) => n.id === sceneId);
+  if (!charNode || !sceneNode) {
+    return { document: doc, appears: false, reason: '対象のノードが見つかりません。' };
+  }
+  const pick = (node: PlotNode, preferredId: string, direction: SocketDirection) =>
+    node.sockets.find(
+      (s) => s.id === preferredId && s.dataType === 'character' && s.direction === direction
+    ) ?? node.sockets.find((s) => s.dataType === 'character' && s.direction === direction);
+  const outSock = pick(charNode, 'appear_out', 'out');
+  const inSock = pick(sceneNode, 'chars_in', 'in');
+  if (!outSock || !inSock) {
+    return {
+      document: doc,
+      appears: false,
+      reason: '登場人物（●）の端子が見つかりません。ノード種別を確認してください。',
+    };
+  }
+  const result = connectSockets(doc, characterId, outSock.id, sceneId, inSock.id);
+  if (!result.addedEdge) {
+    return { document: doc, appears: false, reason: result.reason };
+  }
+  return { document: result.document, appears: true };
+}
+
+export interface NodeClipboardPayload {
+  kind: 'node-plot/clipboard';
+  version: 1;
+  nodes: PlotNode[];
+  edges: PlotEdge[];
+}
+
+/** 選択ノードと、選択ノード同士を結ぶエッジをクリップボード用に抜き出す。 */
+export function extractNodeClipboard(doc: PlotDocument, nodeIds: Iterable<string>): NodeClipboardPayload {
+  const ids = new Set(nodeIds);
+  return {
+    kind: 'node-plot/clipboard',
+    version: 1,
+    nodes: doc.nodes.filter((n) => ids.has(n.id)),
+    edges: doc.edges.filter((e) => ids.has(e.fromNodeId) && ids.has(e.toNodeId)),
+  };
+}
+
+export function isNodeClipboardPayload(value: unknown): value is NodeClipboardPayload {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const v = value as Record<string, unknown>;
+  return v.kind === 'node-plot/clipboard' && Array.isArray(v.nodes) && Array.isArray(v.edges);
+}
+
+/**
+ * クリップボード内容を新しいIDで貼り付ける（複製にも使用）。内部エッジはIDを付け替えて維持する。
+ */
+export function insertNodeClipboard(
+  doc: PlotDocument,
+  payload: NodeClipboardPayload,
+  offsetX: number,
+  offsetY: number
+): { document: PlotDocument; newNodeIds: string[] } {
+  const stamp = Date.now();
+  const idMap = new Map<string, string>();
+  const existingIds = new Set(doc.nodes.map((n) => n.id));
+  const newNodes: PlotNode[] = payload.nodes.map((n) => {
+    let newId = `node_${stamp}_${nodeCounter++}`;
+    while (existingIds.has(newId)) {
+      newId = `node_${stamp}_${nodeCounter++}`;
+    }
+    idMap.set(n.id, newId);
+    return {
+      ...n,
+      id: newId,
+      x: Math.round(n.x + offsetX),
+      y: Math.round(n.y + offsetY),
+      tags: [...n.tags],
+      sockets: n.sockets.map((s) => ({ ...s })),
+      customParams: n.customParams.map((c) => ({ ...c })),
+    };
+  });
+  const newEdges: PlotEdge[] = [];
+  for (const e of payload.edges) {
+    const from = idMap.get(e.fromNodeId);
+    const to = idMap.get(e.toNodeId);
+    if (from && to) {
+      newEdges.push({ ...e, id: `edge_${stamp}_${nodeCounter++}`, fromNodeId: from, toNodeId: to });
+    }
+  }
+  return {
+    document: { ...doc, nodes: [...doc.nodes, ...newNodes], edges: [...doc.edges, ...newEdges] },
+    newNodeIds: newNodes.map((n) => n.id),
+  };
+}
+
+/**
+ * 確定度が未設定のノードについて、タグ（「決定」「案」「未統合」など）から確定度を設定する。
+ * `removeTags` が true の場合は変換に使ったタグを取り除く。
+ */
+export function applyCertaintyFromTags(
+  doc: PlotDocument,
+  aliases: Readonly<Record<string, NodeCertainty>>,
+  removeTags = false
+): { document: PlotDocument; updatedCount: number } {
+  let updatedCount = 0;
+  const nodes = doc.nodes.map((n) => {
+    if (n.certainty) {
+      return n;
+    }
+    const matchTag = n.tags.find((t) => aliases[t.trim()] !== undefined);
+    if (!matchTag) {
+      return n;
+    }
+    updatedCount++;
+    return {
+      ...n,
+      certainty: aliases[matchTag.trim()],
+      tags: removeTags ? n.tags.filter((t) => aliases[t.trim()] === undefined) : n.tags,
+    };
+  });
+  return { document: updatedCount > 0 ? { ...doc, nodes } : doc, updatedCount };
+}
+
+export function countNodesWithCertaintyTags(
+  doc: PlotDocument,
+  aliases: Readonly<Record<string, NodeCertainty>>
+): number {
+  return doc.nodes.filter((n) => !n.certainty && n.tags.some((t) => aliases[t.trim()] !== undefined))
+    .length;
 }

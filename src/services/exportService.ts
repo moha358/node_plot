@@ -1,5 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { computeFrameHierarchy, getNodeFramePath } from '../core/frameLayout';
+import { CERTAINTY_META } from '../core/theme';
 import {
   computeSceneOrder,
   detectUnresolvedForeshadows,
@@ -23,12 +25,20 @@ export function generateMarkdownOutline(doc: PlotDocument): string {
     lines.push('');
   }
 
+  const hierarchy = computeFrameHierarchy(doc);
   const characters = doc.nodes.filter((n) => n.category === 'character');
   if (characters.length > 0) {
     lines.push('## 登場人物一覧');
     for (const c of characters) {
       const role = c.characterParams?.role ? `（${c.characterParams.role}）` : '';
       lines.push(`### ${c.title}${role}`);
+      const groupPath = getNodeFramePath(doc, c.id, hierarchy);
+      if (groupPath.length > 0) {
+        lines.push(`- **所属:** ${groupPath.map((f) => f.title).join(' › ')}`);
+      }
+      if (c.certainty) {
+        lines.push(`- **確定度:** ${CERTAINTY_META[c.certainty].label}`);
+      }
       if (c.body.trim()) {
         lines.push(c.body.trim());
       }
@@ -73,6 +83,9 @@ export function generateMarkdownOutline(doc: PlotDocument): string {
       }
       if (sp?.status) {
         metaParts.push(`状態: ${sp.status}`);
+      }
+      if (scene.certainty) {
+        metaParts.push(`確定度: ${CERTAINTY_META[scene.certainty].label}`);
       }
       if (sp?.manuscriptPath) {
         metaParts.push(`原稿: \`${sp.manuscriptPath}\``);

@@ -15,7 +15,7 @@ Marketplace 公開審査および検索性（SEO）を満たすため、`package
   "name": "node-plot",
   "displayName": "Node Plot - 物語プロット＆アイデア構築ノードエディタ",
   "description": "小説・シナリオの構想やアイデアを付箋ノードとして書き溜め、時系列・登場人物・伏線の提示と回収をマルチソケットで視覚的に繋いで構成できるVS Code拡張機能。Genkou Sheet（原稿用紙エディタ）連携対応。",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "moha358",
   "license": "MIT",
   "engines": {

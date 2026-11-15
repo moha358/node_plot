@@ -184,8 +184,8 @@ describe('セリフ棚（書き溜めセリフ）', () => {
         [HERO, '針が、逆に回ってる', '独り言'],
         [HERO, '続けて話者を引き継ぐ', '小声で'],
         [HERO, 'コロン区切り', ''],
-        ['', '未登録の話者のセリフ', '話者: ミナト'],
-        ['', 'そうだ「名前でない語＋鉤括弧」', '話者: ミナト'],
+        // 話者指定・鉤括弧始まりでない行は直前のセリフの続き（セリフ内の改行）
+        ['', '未登録の話者のセリフ\nそうだ「名前でない語＋鉤括弧」', '話者: ミナト'],
       ]
     );
   });
@@ -210,5 +210,32 @@ describe('セリフ棚（書き溜めセリフ）', () => {
     assert.equal(parseSpeakerSwitch('@アキラ', chars), HERO);
     assert.equal(parseSpeakerSwitch('＠ミナト', chars), '');
     assert.equal(parseSpeakerSwitch('@アキラ 本文あり', chars), undefined);
+  });
+
+  it('Shift+Enter の改行は同じセリフ内に残し、空行・話者指定・鉤括弧始まりでだけ区切る', () => {
+    const chars = createInitialPlotDocument().nodes.filter((n) => n.category === 'character');
+    const parsed = parseLineCaptureText(
+      [
+        'あのさ',
+        'やっぱり、なんでもない // 言いかけてやめる',
+        '',
+        '二つ目は空行のあと',
+        '「三つ目は鉤括弧始まり',
+        '　改行しても続く」（小声）',
+        '@アキラ 四つ目',
+        'その続き',
+      ].join('\n'),
+      chars,
+      HERO
+    );
+    assert.deepEqual(
+      parsed.map((p) => [p.text, p.note]),
+      [
+        ['あのさ\nやっぱり、なんでもない', '言いかけてやめる'],
+        ['二つ目は空行のあと', ''],
+        ['三つ目は鉤括弧始まり\n改行しても続く', '小声'],
+        ['四つ目\nその続き', ''],
+      ]
+    );
   });
 });

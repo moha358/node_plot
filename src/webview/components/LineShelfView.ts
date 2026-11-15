@@ -88,7 +88,7 @@ export class LineShelfView {
     this.captureInput.className = 'nplot-input nplot-lines-capture-input';
     this.captureInput.rows = 1;
     this.captureInput.placeholder =
-      'セリフを書き留める…（Enter で追加・Shift+Enter で改行／「@名前 本文」「名前「本文」」でまとめて貼り付け可）';
+      'セリフを書き留める…（Enter で追加・Shift+Enter でセリフ内の改行／空行や「@名前」「名前「」「「」で始まる行は別のセリフとして取り込み）';
     this.captureInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
         e.preventDefault();

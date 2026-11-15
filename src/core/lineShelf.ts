@@ -290,84 +290,117 @@ function stripOuterBrackets(text: string): string {
   return t;
 }
 
-/** 末尾の「（メモ）」「// メモ」をメモとして切り出す。 */
-function splitNote(text: string): { body: string; note: string } {
-  const slash = text.match(/^(.*?)\s*\/\/\s*(.+)$/);
-  if (slash) {
-    return { body: slash[1].trim(), note: slash[2].trim() };
+/** 行末の「// メモ」を切り出す。 */
+function splitSlashNote(line: string): { body: string; note: string } {
+  const m = line.match(/^(.*?)\s*\/\/\s*(.+)$/);
+  return m ? { body: m[1].trim(), note: m[2].trim() } : { body: line.trim(), note: '' };
+}
+
+/** 閉じ鉤括弧の後ろの「（メモ）」を切り出す（複数行のセリフにも対応）。 */
+function splitParenNote(text: string): { body: string; note: string } {
+  const m = text.match(/^([\s\S]*[」』])\s*[（(]([^）)]*)[）)]\s*$/);
+  return m ? { body: m[1].trim(), note: m[2].trim() } : { body: text.trim(), note: '' };
+}
+
+interface SpeakerMarker {
+  name: string;
+  rest: string;
+}
+
+/** 行頭の話者指定（`@名前`、既存キャラ名＋「 または ：）を読み取る。 */
+function readSpeakerMarker(line: string, characters: readonly PlotNode[]): SpeakerMarker | null {
+  const at = line.match(/^[@＠](\S+?)(?:\s+(.*))?$/);
+  if (at) {
+    return { name: at[1], rest: at[2] ?? '' };
   }
-  const paren = text.match(/^(.*[」』])\s*[（(]([^）)]*)[）)]\s*$/);
-  if (paren) {
-    return { body: paren[1].trim(), note: paren[2].trim() };
+  const bracket = line.match(/^([^「『\s]{1,24})\s*([「『].*)$/);
+  if (bracket && findCharacterByName(bracket[1], characters)) {
+    return { name: bracket[1], rest: bracket[2] };
   }
-  return { body: text.trim(), note: '' };
+  const colon = line.match(/^([^：:「『\s]{1,24})\s*[：:]\s*(.+)$/);
+  if (colon && findCharacterByName(colon[1], characters)) {
+    return { name: colon[1], rest: colon[2] };
+  }
+  return null;
 }
 
 /**
- * まとめ書き・貼り付けテキストをセリフに分解する（1 行 1 セリフ、空行は無視）。
+ * まとめ書き・貼り付けテキストをセリフに分解する。
  *
- * 対応する書き方:
+ * 新しいセリフとして区切るのは次の行だけで、それ以外の改行は同じセリフ内の改行として残す
+ * （入力欄の Shift+Enter で複数行のセリフを書けるように）:
+ * - 空行
  * - `@アキラ 師匠は、まだ生きてる`        … @名前 + 空白 + 本文
  * - `アキラ「師匠は、まだ生きてる」`      … 名前 + 鉤括弧（名前が既存キャラに一致する場合のみ）
  * - `アキラ：師匠は、まだ生きてる`        … 名前 + 全角/半角コロン（同上）
- * - `「師匠は、まだ生きてる」`／本文のみ  … 直前に指定した話者（無ければ defaultSpeakerId）
+ * - `「師匠は、まだ生きてる」`            … 鉤括弧で始まる行（直前の話者、無ければ defaultSpeakerId）
  *
- * 末尾の `// メモ` または鉤括弧の後ろの `（メモ）` はメモ欄に入る。
- * `@名前` 単独の行は以降の行の話者を切り替える。未登録の `@名前` は話者未定とし、メモに表記を残す。
+ * 行末の `// メモ` または閉じ鉤括弧の後ろの `（メモ）` はメモ欄に入る。
+ * `@名前` 単独の行は以降の話者を切り替える。未登録の `@名前` は話者未定とし、メモに表記を残す。
  */
 export function parseLineCaptureText(
   text: string,
   characters: readonly PlotNode[],
   defaultSpeakerId = ''
 ): ParsedCaptureLine[] {
-  const result: ParsedCaptureLine[] = [];
-  let currentSpeakerId = defaultSpeakerId;
-  let currentUnknown: string | undefined;
+  interface Draft {
+    speakerId: string;
+    unknown?: string;
+    bodyLines: string[];
+    notes: string[];
+  }
+  const drafts: Draft[] = [];
+  let current: Draft | null = null;
+  let speakerId = defaultSpeakerId;
+  let unknown: string | undefined;
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) {
+      current = null;
       continue;
     }
 
-    let speakerName: string | null = null;
+    const marker = readSpeakerMarker(line, characters);
     let rest = line;
-
-    const at = line.match(/^[@＠](\S+?)(?:\s+(.*))?$/);
-    const bracket = line.match(/^([^「『\s]{1,24})\s*([「『].*)$/);
-    const colon = line.match(/^([^：:「『\s]{1,24})\s*[：:]\s*(.+)$/);
-
-    if (at) {
-      speakerName = at[1];
-      rest = at[2] ?? '';
-    } else if (bracket && findCharacterByName(bracket[1], characters)) {
-      speakerName = bracket[1];
-      rest = bracket[2];
-    } else if (colon && findCharacterByName(colon[1], characters)) {
-      speakerName = colon[1];
-      rest = colon[2];
+    let startsNew = current === null || /^[「『]/.test(line);
+    if (marker) {
+      const found = findCharacterByName(marker.name, characters);
+      speakerId = found?.id ?? '';
+      unknown = found ? undefined : marker.name;
+      rest = marker.rest;
+      startsNew = true;
+      if (!rest.trim()) {
+        // `@名前` だけの行：話者の切り替えのみ
+        current = null;
+        continue;
+      }
     }
 
-    if (speakerName !== null) {
-      const found = findCharacterByName(speakerName, characters);
-      currentSpeakerId = found?.id ?? '';
-      currentUnknown = found ? undefined : speakerName;
+    const { body, note } = splitSlashNote(rest);
+    if (startsNew || !current) {
+      current = { speakerId, unknown, bodyLines: [], notes: [] };
+      drafts.push(current);
     }
-
-    if (!rest.trim()) {
-      // `@名前` だけの行：話者の切り替えのみ
-      continue;
+    if (body) {
+      current.bodyLines.push(body);
     }
+    if (note) {
+      current.notes.push(note);
+    }
+  }
 
-    const { body, note } = splitNote(rest);
+  const result: ParsedCaptureLine[] = [];
+  for (const d of drafts) {
+    const { body, note: parenNote } = splitParenNote(d.bodyLines.join('\n'));
     const finalText = stripOuterBrackets(body);
     if (!finalText) {
       continue;
     }
-    const entry: ParsedCaptureLine = { speakerId: currentSpeakerId, text: finalText, note };
-    if (currentUnknown) {
-      entry.unknownSpeakerName = currentUnknown;
-      entry.note = [`話者: ${currentUnknown}`, note].filter(Boolean).join(' / ');
+    const notes = [...(d.unknown ? [`話者: ${d.unknown}`] : []), ...d.notes, ...(parenNote ? [parenNote] : [])];
+    const entry: ParsedCaptureLine = { speakerId: d.speakerId, text: finalText, note: notes.join(' / ') };
+    if (d.unknown) {
+      entry.unknownSpeakerName = d.unknown;
     }
     result.push(entry);
   }

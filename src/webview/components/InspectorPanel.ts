@@ -17,6 +17,7 @@ import {
   createLine,
   detachLineFromScene,
   getLines,
+  parseLineCaptureText,
   placeLine,
   speakerDisplayName,
   summarizeSceneLines,
@@ -642,17 +643,19 @@ export class InspectorPanel {
     const input = document.createElement('textarea');
     input.className = 'nplot-input nplot-inspector-line-input';
     input.rows = 2;
-    input.placeholder = `${speakerDisplayName(node)}が言いそうなセリフ（Enter で追加）`;
+    input.placeholder = `${speakerDisplayName(node)}が言いそうなセリフ（Enter で追加・Shift+Enter で改行）`;
     const submit = () => {
       const text = input.value.trim();
       if (!text) {
         return;
       }
-      const added = text
-        .split(/\r?\n/)
-        .map((t) => t.trim().replace(/^[「『](.*)[」』]$/, '$1'))
-        .filter(Boolean)
-        .map((t) => createLine({ speakerId: node.id, text: t }));
+      const characters = doc.nodes.filter((n) => n.category === 'character');
+      const added = parseLineCaptureText(text, characters, node.id).map((p) =>
+        createLine({ speakerId: p.speakerId, text: p.text, note: p.note })
+      );
+      if (added.length === 0) {
+        return;
+      }
       input.value = '';
       this.callbacks.onDocumentMutated(addLines(doc, added));
       this.callbacks.onNotify(`${speakerDisplayName(node)}のセリフを ${added.length} 件書き留めました`);

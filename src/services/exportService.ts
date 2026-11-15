@@ -168,17 +168,27 @@ export function syncSceneOrderToGenkouFile(
     }
   }
 
+  const existingFiles = Array.isArray(rawObj.files)
+    ? rawObj.files.filter((x): x is string => typeof x === 'string')
+    : [];
   const existingOrder = Array.isArray(rawObj.order)
     ? rawObj.order.filter((x): x is string => typeof x === 'string')
     : [];
 
   const mergedOrder = [...sceneFiles];
-  for (const existing of existingOrder) {
+  for (const existing of [...existingFiles, ...existingOrder]) {
     if (!mergedOrder.includes(existing)) {
       mergedOrder.push(existing);
     }
   }
 
+  if (typeof rawObj.version !== 'number') {
+    rawObj.version = 1;
+  }
+  if (typeof rawObj.title !== 'string' || !rawObj.title) {
+    rawObj.title = doc.title || path.basename(folderPath);
+  }
+  rawObj.files = mergedOrder;
   rawObj.order = mergedOrder;
   fs.writeFileSync(genkouJsonPath, JSON.stringify(rawObj, null, 2) + '\n', 'utf8');
 

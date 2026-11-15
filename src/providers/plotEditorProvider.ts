@@ -373,6 +373,11 @@ export class PlotEditorProvider implements vscode.CustomTextEditorProvider {
   public async syncGenkouFromPlot(plotUri: vscode.Uri, doc: PlotDocument): Promise<void> {
     const folderPath = path.dirname(plotUri.fsPath);
     const { orderedFiles } = syncSceneOrderToGenkouFile(folderPath, doc);
+    try {
+      await vscode.commands.executeCommand('genkouSheet.refreshTree');
+    } catch {
+      // Genkou Sheet が未アクティブの場合は無視
+    }
     vscode.window.showInformationMessage(
       `Genkou Sheet (.genkou.json) の原稿順序に ${orderedFiles.length} 件のファイルを同期しました。`
     );

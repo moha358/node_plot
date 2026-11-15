@@ -129,6 +129,9 @@ node_plot/
 * `EDIT_RESULT`: `{ type: 'EDIT_RESULT', version: number, accepted: boolean }`
 * `CONFIG_CHANGED`: `{ type: 'CONFIG_CHANGED', config: PlotConfig }`
 * `FOCUS_NODE`: `{ type: 'FOCUS_NODE', nodeId: string }`（サイドバーツリーから特定ノードへジャンプ時）
+* `PARSE_ERROR`: `{ type: 'PARSE_ERROR', message: string, version: number, fileName?: string, config?: PlotConfig }`（`.nplot` の JSON が壊れている場合。`INIT_DOCUMENT` / `DOCUMENT_CHANGED` の代わりに送る。Webview はオーバーレイを表示して `UPDATE_DOCUMENT` を送らない。サンプルドキュメントへのすり替えによる上書き事故を防ぐ）
+
+> **パン・ズームの扱い（ADR-006）:** パン・ズーム・ワイヤー表示切替・パネル開閉は Webview の `setState` に保存し、それ単独では `UPDATE_DOCUMENT` を送らない（ファイルを「変更あり」にせず Undo 履歴も汚さない）。`viewport` は他の編集と一緒にファイルへ書かれる。`DOCUMENT_CHANGED` 受信時は現在の視点を維持する。
 
 ### Webview → Host (`WebviewToHostMessage`)
 * `READY`: `{ type: 'READY' }`

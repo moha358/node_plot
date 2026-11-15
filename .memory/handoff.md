@@ -3,10 +3,10 @@
 > 各エージェントは作業開始時にこのファイルを読み、作業終了時（またはフェーズ完了時）に必ず最新状態を更新してください。
 
 ## 現在のステータス
-* **現在フェーズ:** Phase 0〜Phase 4 実装・単体テスト・バンドル検証 完了
+* **現在フェーズ:** Phase 5（UI/UX 改善）完了。公開は機能充実後の予定
 * **最終更新:** 2026-11-15
 * **ビルド状態:** `npm run build` 成功（`dist/extension.js` 34KB, `dist/webview.js` 55KB, `dist/globalTheme.css` 13KB）
-* **テスト状態:** `npm test`（4スイート・13テスト PASS）、`npm run test:bundle`（2テスト PASS）
+* **テスト状態:** `npm test`（6スイート・28テスト PASS）、`npm run test:bundle`（2テスト PASS）、`npx @vscode/vsce package` 成功
 
 ## 実装完了モジュール一覧
 1. **Core 領域 (`src/core/`):**
@@ -25,5 +25,14 @@
    * `styles/globalTheme.css`: CSS Variables による一元管理スタイル（Dark / Light / Sepia テーマ、セマンティックズーム、関連トレース減光）。
    * `components/Toolbar.ts`, `CanvasViewport.ts`, `EdgeRenderer.ts`, `NodeCard.ts`, `InspectorPanel.ts`, `OutlinePanel.ts`, `InteractionController.ts`, `index.ts`.
 
+## Phase 5 の要点（2026-11-15）
+* UXレビュー: `docs/validation/ux-review-2026-11-15.md`（指摘と対応状況）。
+* 新規: `src/core/frameLayout.ts`（枠の入れ子・所属・リサイズ・囲む・中身に合わせる）、`src/webview/components/AppearanceMatrixView.ts`（登場表）、`Toast.ts`、`inlineEdit.ts`。
+* `CanvasViewport` は render / applyViewport / applyGeometry / applyDecorations の4段階描画。選択変更やパンで DOM を再構築しないこと（ダブルクリック編集が壊れる）。
+* Webview 状態（`vscode.setState`）: viewport・非表示ワイヤー種別・パネル開閉・ビュー種別。
+* 実機（F5）での最終確認はまだ。ヘッドレス Chrome＋VS Code API スタブで、実データ（52ノード/102エッジ）の操作テストは実施済み。
+
 ## 次のステップ
+* F5（Extension Development Host）で実機確認：⌘Z と Webview のキー転送、コピー＆貼り付け、IME 入力中のインライン編集。
+* `.memory/tasks.md` T5-7 の未着手候補から優先度を決めて着手。
 * VS Code の Extension Development Host（F5）または VSIX パッケージ化による実機確認、および必要に応じた UI 微調整。

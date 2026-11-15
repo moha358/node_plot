@@ -10,7 +10,7 @@
 
 1. **[.memory/handoff.md](./.memory/handoff.md)**: 現在のフェーズ、直前の作業内容、次に着手すべきタスクを確認する。
 2. **[.memory/project-context.md](./.memory/project-context.md)**: プロジェクトの不変ルール（他プロジェクトへの非干渉、グローバルテーマによるスタイル一元管理、純粋ロジック分離など）を確認する。
-3. **[.memory/decisions.md](./.memory/decisions.md)**: 確定済みのアーキテクチャ意思決定（ADR-001〜005）を確認する（合意済みの決定を独断で変更しないこと）。
+3. **[.memory/decisions.md](./.memory/decisions.md)**: 確定済みのアーキテクチャ意思決定（ADR-001〜007）を確認する（合意済みの決定を独断で変更しないこと）。
 4. **[.memory/tasks.md](./.memory/tasks.md)**: 自身の担当タスク（スコープ対象ファイル）と検証基準（Verify条件）を確認する。
 
 ---

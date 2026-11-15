@@ -53,3 +53,19 @@
   `genkou_sheet` と同様、通常のプログラミング用ワークスペースに一切干渉しない仕組みが必要。
 * **Decision:**
   `activationEvents` は `workspaceContains:.nplot.json` / `workspaceContains:.genkou.json` および `.nplot` ファイル開封時のみとし、コマンド `Node Plot: このフォルダーをプロットプロジェクトとして有効化` を実行したワークスペースでのみ専用設定ファイルを構成する。
+
+---
+
+## ADR-006: パン・ズームはファイル編集として扱わない
+* **Status:** Accepted (2026-11-15)
+* **Context:** パン・ズームのたびに `UPDATE_DOCUMENT` を送っていたため、眺めるだけでファイルが「変更あり」になり、Undo（⌘Z）の最初の数回が視点移動の取り消しに消費されていた。
+* **Decision:** パン・ズーム・ワイヤー表示・パネル開閉は Webview の `setState` に保存し、単独ではドキュメントを更新しない。`viewport` フィールドはスキーマに残し、他の編集を確定する際に現在値が一緒に書き込まれる。`DOCUMENT_CHANGED`（Undo・外部変更）受信時は現在の視点を維持する。
+* **Consequences:** 閲覧だけではファイルが汚れない。新しいパネルで開いた場合はファイル内の最後の `viewport` から表示される。
+
+---
+
+## ADR-007: 枠の入れ子・所属はジオメトリから導出し保存しない
+* **Status:** Accepted (2026-11-15)
+* **Context:** 「キャラクターを組織で束ねる」ための入れ子枠が必要。`parentFrameId` / `frameId` を保存する方式は、手作業の JSON 編集や枠のリサイズで実際の配置と保存値が食い違う恐れがある。
+* **Decision:** 所属は常に座標から導出する（ノードはアンカー点を含む最小の枠、枠は自分を完全に含むより大きい最小の枠が親）。純粋関数として `src/core/frameLayout.ts` に実装する。
+* **Consequences:** スキーマ変更は `PlotFrame.colorTag` の値域と `PlotNode.width` / `certainty` の追加のみ（後方互換）。見た目と所属が常に一致する。代償として、枠を重ねて配置すると意図せず入れ子になる（インスペクタの所属パス表示で確認できる）。

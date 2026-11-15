@@ -73,3 +73,16 @@
 * `[x]` **T4-1: README / CHANGELOG / LICENSE / アイコン整備 & パッケージ検証**
   * **担当スコープ:** `README.md`, `CHANGELOG.md`, `LICENSE`, `assets/`, `docs/validation/release-check.md`, `test/build/bundle.test.cjs`
   * **Verify:** `npm run build`、`npm test`（13件）、`npm run test:bundle`（2件）がすべてパスし、150ノード規模の長編プロットデータで高速に動作することを確認済み。
+
+---
+
+## Phase 5: UI/UX 改善（2026-11-15 UXレビュー対応）
+* `[x]` **T5-1: 編集の安全性** — 壊れた JSON でサンプルへすり替えない（`tryParsePlotDocument` + `PARSE_ERROR` オーバーレイ）、パン・ズームでファイルを変更しない（ADR-006）、`PlotNode.width` の保存漏れ修正。
+  * **Verify:** `test/core/editing.test.ts`、ヘッドレス Chrome での操作テスト（パンで UPDATE_DOCUMENT が送られない／破損中は編集がブロックされる）。
+* `[x]` **T5-2: 描画性能** — パン・ズームは transform のみ、ドラッグは位置更新＋ワイヤー再描画（rAF 間引き）、選択はクラス付け替え。グリッドがパン・ズームに追従。
+* `[x]` **T5-3: 枠の色・入れ子・リサイズ**（ADR-007, `src/core/frameLayout.ts`）
+  * **Verify:** `test/core/frameLayout.test.ts`（7件）＋ ヘッドレス操作テスト（枠ドラッグで子枠・ノードが同量移動、角ハンドルで右辺のみ変更）。
+* `[x]` **T5-4: 選択・編集操作** — 複数選択／範囲選択、インライン名前編集、コピー＆貼り付け・複製、カードへのドロップ接続、トースト通知、種別変更時の接続消失通知。
+* `[x]` **T5-5: 確定度・登場表・ワイヤー表示切替・検索ジャンプ**
+* `[x]` **T5-6: 公開ブロッカー解消** — `assets/icon.png`（暫定デザイン）追加、カテゴリに `Visualization` 追加。
+* `[ ]` **T5-7: 未着手の改善候補** — README 用スクリーンショット／GIF、ミニマップ、ビューポート外カリング（NFR-01）、作中時間軸ビュー、シーン順序の複数案保存、メモ付箋用の汎用「関連」リンク、枠の折りたたみ、矢印キーでの微移動。

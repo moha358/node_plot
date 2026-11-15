@@ -43,6 +43,7 @@ import {
 } from './CanvasViewport';
 import { TempWireState } from './EdgeRenderer';
 import { InspectorPanel } from './InspectorPanel';
+import { LineShelfView } from './LineShelfView';
 import { ActiveSocketDragInfo } from './NodeCard';
 import { OutlinePanel } from './OutlinePanel';
 import { Toast } from './Toast';
@@ -103,6 +104,7 @@ export class InteractionController {
   public readonly toolbar: Toolbar;
   public readonly canvasViewport: CanvasViewport;
   public readonly matrixView: AppearanceMatrixView;
+  public readonly lineShelfView: LineShelfView;
   public readonly jsonViewElement: HTMLElement;
   private readonly jsonTextarea: HTMLTextAreaElement;
   private readonly jsonStatusEl: HTMLElement;
@@ -308,6 +310,7 @@ export class InteractionController {
       onPromoteCategory: (nodeId, cat) => this.promoteCategory(nodeId, cat),
       onStartSocketDrag: (nodeId, sock, e) => this.handleSocketDragGesture(nodeId, sock, e),
       onOpenManuscript: (node) => this.bridge.openManuscript(node, false),
+      onOpenLineShelf: (opts) => this.openLineShelf(opts),
       onToggleWireType: (t) => {
         if (this.hiddenWireTypes.has(t)) {
           this.hiddenWireTypes.delete(t);
@@ -334,6 +337,16 @@ export class InteractionController {
         this.switchViewMode('node');
         this.focusNode(nodeId);
       },
+    });
+
+    // --- Line shelf view ---
+    this.lineShelfView = new LineShelfView({
+      onDocumentMutated: (next) => this.commit(next),
+      onFocusNode: (nodeId) => {
+        this.switchViewMode('node');
+        this.focusNode(nodeId);
+      },
+      onNotify: (message, kind) => this.toast.show(message, kind ?? 'info'),
     });
 
     // --- Inspector ---
@@ -367,6 +380,7 @@ export class InteractionController {
       },
       onFocusNode: (nodeId) => this.focusNode(nodeId),
       onNotify: (message) => this.toast.show(message),
+      onOpenLineShelf: (opts) => this.openLineShelf(opts),
     });
 
     this.outlinePanel = new OutlinePanel((nodeId) => {
@@ -400,7 +414,7 @@ export class InteractionController {
     if (typeof state.showInspector === 'boolean') {
       this.showInspector = state.showInspector;
     }
-    if (state.viewMode === 'node' || state.viewMode === 'matrix') {
+    if (state.viewMode === 'node' || state.viewMode === 'matrix' || state.viewMode === 'lines') {
       this.viewMode = state.viewMode;
     }
   }
@@ -503,6 +517,22 @@ export class InteractionController {
     }, 250);
   }
 
+  /** セリフ棚を開く。シーン指定でそのシーンのセリフに絞り込み、話者指定で入力欄の話者を設定する。 */
+  public openLineShelf(opts: { sceneId?: string; speakerId?: string; focusInput?: boolean } = {}): void {
+    this.lineShelfView.focusScene(opts.sceneId ?? null);
+    if (opts.speakerId !== undefined) {
+      this.lineShelfView.presetSpeaker(opts.speakerId);
+    }
+    if (this.viewMode === 'lines') {
+      this.renderAll();
+    } else {
+      this.switchViewMode('lines');
+    }
+    if (opts.focusInput) {
+      this.lineShelfView.focusCaptureInput();
+    }
+  }
+
   private switchViewMode(mode: EditorViewMode): void {
     if (this.viewMode === mode) {
       return;
@@ -536,6 +566,7 @@ export class InteractionController {
     const mode = this.viewMode;
     this.canvasViewport.viewportElement.classList.toggle('is-hidden', mode !== 'node');
     this.matrixView.setVisible(mode === 'matrix');
+    this.lineShelfView.setVisible(mode === 'lines');
     this.jsonViewElement.classList.toggle('is-hidden', mode !== 'json');
     this.parseErrorElement.classList.toggle('is-hidden', this.parseError === null);
     this.parseErrorMessageEl.textContent = this.parseError ?? '';
@@ -548,6 +579,8 @@ export class InteractionController {
       }
     } else if (mode === 'matrix') {
       this.matrixView.render(this.doc);
+    } else if (mode === 'lines') {
+      this.lineShelfView.render(this.doc);
     } else {
       this.canvasViewport.render(this.doc, this.canvasState());
     }
@@ -1254,7 +1287,7 @@ export class InteractionController {
       return;
     }
     const mod = e.metaKey || e.ctrlKey;
-    if (e.key === 'Delete' || e.key === 'Backspace') {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && this.viewMode === 'node') {
       e.preventDefault();
       this.deleteSelection();
     } else if (e.key === 'Escape') {

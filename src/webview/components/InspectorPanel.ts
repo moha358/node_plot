@@ -13,6 +13,16 @@ import {
   removeEdge,
 } from '../../core/graphEngine';
 import {
+  addLines,
+  createLine,
+  detachLineFromScene,
+  getLines,
+  placeLine,
+  speakerDisplayName,
+  summarizeSceneLines,
+  unplaceLine,
+} from '../../core/lineShelf';
+import {
   CERTAINTY_META,
   CERTAINTY_ORDER,
   CERTAINTY_TAG_ALIASES,
@@ -26,6 +36,7 @@ import {
   PlotDocument,
   PlotEdge,
   PlotFrame,
+  PlotLine,
   PlotNode,
   SceneStatus,
   SocketDataType,
@@ -45,6 +56,7 @@ export interface InspectorCallbacks {
   onDeleteFrame: (frameId: string, withContents: boolean) => void;
   onFocusNode: (nodeId: string) => void;
   onNotify: (message: string) => void;
+  onOpenLineShelf: (opts: { sceneId?: string; speakerId?: string; focusInput?: boolean }) => void;
 }
 
 export interface InspectorSelection {
@@ -428,8 +440,10 @@ export class InspectorPanel {
     // Category specific parameters
     if (node.category === 'scene') {
       this.renderSceneParams(doc, node);
+      this.renderSceneLinesSection(doc, node);
     } else if (node.category === 'character') {
       this.renderCharacterParams(doc, node);
+      this.renderCharacterLinesSection(doc, node);
     } else if (node.category === 'foreshadow') {
       this.renderForeshadowParams(doc, node);
     } else if (node.category === 'world_item') {
@@ -555,6 +569,127 @@ export class InspectorPanel {
     openMsBtn.textContent = '📄 原稿を Genkou で開く / 作成';
     openMsBtn.addEventListener('click', () => this.callbacks.onOpenManuscript(node, true));
     this.element.appendChild(openMsBtn);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Lines (セリフ棚)
+  // ---------------------------------------------------------------------------
+
+  private renderSceneLinesSection(doc: PlotDocument, node: PlotNode): void {
+    const summary = summarizeSceneLines(doc).get(node.id) ?? { placed: [], candidates: [] };
+    const speakers = new Map(doc.nodes.filter((n) => n.category === 'character').map((n) => [n.id, n]));
+    const wrap = document.createElement('div');
+    wrap.className = 'nplot-inspector-lines';
+    wrap.appendChild(
+      this.createSectionTitle(`セリフ（確定 ${summary.placed.length}・候補 ${summary.candidates.length}）`)
+    );
+
+    const renderItem = (line: PlotLine, placed: boolean) => {
+      const row = document.createElement('div');
+      row.className = `nplot-inspector-line ${placed ? 'is-placed' : 'is-candidate'}`;
+      const text = document.createElement('div');
+      text.className = 'nplot-inspector-line-text';
+      text.textContent = `${speakerDisplayName(speakers.get(line.speakerId))}「${line.text}」`;
+      text.title = line.note ? `メモ: ${line.note}` : '';
+      const actions = document.createElement('div');
+      actions.className = 'nplot-inspector-line-actions';
+      if (placed) {
+        actions.appendChild(
+          this.createMiniButton('候補に戻す', () => this.callbacks.onDocumentMutated(unplaceLine(doc, line.id)))
+        );
+      } else {
+        actions.appendChild(
+          this.createMiniButton('★ 確定', () =>
+            this.callbacks.onDocumentMutated(placeLine(doc, line.id, node.id))
+          )
+        );
+      }
+      actions.appendChild(
+        this.createMiniButton('外す', () =>
+          this.callbacks.onDocumentMutated(detachLineFromScene(doc, line.id, node.id))
+        )
+      );
+      row.append(text, actions);
+      wrap.appendChild(row);
+    };
+    summary.placed.forEach((l) => renderItem(l, true));
+    summary.candidates.forEach((l) => renderItem(l, false));
+    if (summary.placed.length + summary.candidates.length === 0) {
+      wrap.appendChild(
+        this.createHelp('まだこのシーンに配置されたセリフはありません。セリフ棚からドラッグで候補に追加できます。')
+      );
+    }
+
+    const row = document.createElement('div');
+    row.className = 'nplot-field-row';
+    row.appendChild(
+      this.createMiniButton('セリフ棚でこのシーンを開く', () =>
+        this.callbacks.onOpenLineShelf({ sceneId: node.id })
+      )
+    );
+    wrap.appendChild(row);
+    this.element.appendChild(wrap);
+  }
+
+  private renderCharacterLinesSection(doc: PlotDocument, node: PlotNode): void {
+    const lines = getLines(doc).filter((l) => l.speakerId === node.id);
+    const sceneIds = new Set(doc.nodes.filter((n) => n.category === 'scene').map((n) => n.id));
+    const placed = lines.filter((l) => l.placedSceneId && sceneIds.has(l.placedSceneId)).length;
+    const wrap = document.createElement('div');
+    wrap.className = 'nplot-inspector-lines';
+    wrap.appendChild(this.createSectionTitle(`セリフ（${lines.length} 件・うち確定 ${placed}）`));
+
+    const input = document.createElement('textarea');
+    input.className = 'nplot-input nplot-inspector-line-input';
+    input.rows = 2;
+    input.placeholder = `${speakerDisplayName(node)}が言いそうなセリフ（Enter で追加）`;
+    const submit = () => {
+      const text = input.value.trim();
+      if (!text) {
+        return;
+      }
+      const added = text
+        .split(/\r?\n/)
+        .map((t) => t.trim().replace(/^[「『](.*)[」』]$/, '$1'))
+        .filter(Boolean)
+        .map((t) => createLine({ speakerId: node.id, text: t }));
+      input.value = '';
+      this.callbacks.onDocumentMutated(addLines(doc, added));
+      this.callbacks.onNotify(`${speakerDisplayName(node)}のセリフを ${added.length} 件書き留めました`);
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        submit();
+      }
+    });
+    wrap.appendChild(input);
+
+    const recent = lines.slice(-3).reverse();
+    for (const line of recent) {
+      const item = document.createElement('div');
+      item.className = 'nplot-inspector-line-text is-recent';
+      item.textContent = `「${line.text}」`;
+      wrap.appendChild(item);
+    }
+
+    const row = document.createElement('div');
+    row.className = 'nplot-field-row';
+    row.appendChild(this.createMiniButton('追加', submit));
+    row.appendChild(
+      this.createMiniButton('セリフ棚で一覧', () => this.callbacks.onOpenLineShelf({ speakerId: node.id }))
+    );
+    wrap.appendChild(row);
+    this.element.appendChild(wrap);
+  }
+
+  private createMiniButton(label: string, onClick: () => void): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'nplot-btn';
+    btn.textContent = label;
+    btn.addEventListener('click', onClick);
+    return btn;
   }
 
   private renderCharacterParams(doc: PlotDocument, node: PlotNode): void {

@@ -55,6 +55,7 @@ export interface CanvasViewportCallbacks {
   onPromoteCategory: (nodeId: string, newCategory: NodeCategory) => void;
   onStartSocketDrag: (nodeId: string, socket: PlotSocket, e: PointerEvent) => void;
   onOpenManuscript: (node: PlotNode) => void;
+  onOpenLineShelf: (opts: { sceneId?: string; speakerId?: string }) => void;
   onToggleWireType: (dataType: SocketDataType) => void;
 }
 
@@ -330,6 +331,7 @@ export class CanvasViewport {
         onPromoteCategory: (id, cat) => this.callbacks.onPromoteCategory(id, cat),
         onStartSocketDrag: (id, sock, e) => this.callbacks.onStartSocketDrag(id, sock, e),
         onOpenManuscript: (n) => this.callbacks.onOpenManuscript(n),
+        onOpenLineShelf: (opts) => this.callbacks.onOpenLineShelf(opts),
       });
       this.nodeElements.set(node.id, cardEl);
       this.worldElement.appendChild(cardEl);

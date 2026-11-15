@@ -7,7 +7,52 @@ import {
   PlotSocket,
   SocketDataType,
 } from '../../core/types';
+import { getLines, speakerDisplayName } from '../../core/lineShelf';
 import { startInlineEdit } from './inlineEdit';
+
+/** シーン／キャラクターカードに付けるセリフ件数チップ。セリフが 1 件も無いときは出さない。 */
+function createLineCountChip(
+  doc: PlotDocument,
+  node: PlotNode,
+  callbacks: NodeCardCallbacks
+): HTMLElement | null {
+  const all = getLines(doc);
+  if (all.length === 0) {
+    return null;
+  }
+  let label: string;
+  let preview: string[];
+  if (node.category === 'scene') {
+    const placed = all.filter((l) => l.placedSceneId === node.id);
+    const cand = all.filter((l) => l.candidateSceneIds.includes(node.id));
+    if (placed.length + cand.length === 0) {
+      return null;
+    }
+    const speakers = new Map(doc.nodes.map((n) => [n.id, n]));
+    label = `💬 ★${placed.length} ☆${cand.length}`;
+    preview = [...placed, ...cand]
+      .slice(0, 8)
+      .map((l) => `${placed.includes(l) ? '★' : '☆'} ${speakerDisplayName(speakers.get(l.speakerId))}「${l.text}」`);
+  } else {
+    const mine = all.filter((l) => l.speakerId === node.id);
+    if (mine.length === 0) {
+      return null;
+    }
+    label = `💬 ${mine.length}`;
+    preview = mine.slice(-8).map((l) => `「${l.text}」`);
+  }
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'nplot-chip nplot-chip-lines';
+  chip.textContent = label;
+  chip.title = [...preview, '', 'クリックでセリフ棚を開く'].join('\n');
+  chip.addEventListener('pointerdown', (e) => e.stopPropagation());
+  chip.addEventListener('click', (e) => {
+    e.stopPropagation();
+    callbacks.onOpenLineShelf(node.category === 'scene' ? { sceneId: node.id } : { speakerId: node.id });
+  });
+  return chip;
+}
 
 export interface NodeCardCallbacks {
   onNodePointerDown: (nodeId: string, e: PointerEvent) => void;
@@ -18,6 +63,7 @@ export interface NodeCardCallbacks {
   onPromoteCategory: (nodeId: string, newCategory: NodeCategory) => void;
   onStartSocketDrag: (nodeId: string, socket: PlotSocket, e: PointerEvent) => void;
   onOpenManuscript: (node: PlotNode) => void;
+  onOpenLineShelf: (opts: { sceneId?: string; speakerId?: string }) => void;
 }
 
 export interface ActiveSocketDragInfo {
@@ -214,6 +260,11 @@ export function createNodeCardElement(
     tensionChip.textContent = `感情:${tSign}`;
     paramsFooter.appendChild(tensionChip);
 
+    const linesChip = createLineCountChip(doc, node, callbacks);
+    if (linesChip) {
+      paramsFooter.appendChild(linesChip);
+    }
+
     if (sp.manuscriptPath) {
       const msBtn = document.createElement('button');
       msBtn.className = 'nplot-btn';
@@ -226,11 +277,17 @@ export function createNodeCardElement(
       });
       paramsFooter.appendChild(msBtn);
     }
-  } else if (node.category === 'character' && node.characterParams?.role) {
-    const chip = document.createElement('span');
-    chip.className = 'nplot-chip';
-    chip.textContent = node.characterParams.role;
-    paramsFooter.appendChild(chip);
+  } else if (node.category === 'character') {
+    if (node.characterParams?.role) {
+      const chip = document.createElement('span');
+      chip.className = 'nplot-chip';
+      chip.textContent = node.characterParams.role;
+      paramsFooter.appendChild(chip);
+    }
+    const linesChip = createLineCountChip(doc, node, callbacks);
+    if (linesChip) {
+      paramsFooter.appendChild(linesChip);
+    }
   } else if (node.category === 'foreshadow') {
     const status = getForeshadowNodeStatus(doc, node.id);
     const chip = document.createElement('span');

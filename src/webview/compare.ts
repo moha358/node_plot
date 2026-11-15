@@ -130,6 +130,7 @@ function createComparePane(
       onPromoteCategory: noop,
       onStartSocketDrag: noop,
       onOpenManuscript: noop,
+      onOpenLineShelf: noop,
       onToggleWireType: noop,
     },
     false

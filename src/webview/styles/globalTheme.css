@@ -66,6 +66,8 @@ body[data-theme="dark"] {
   --nplot-outline-height: 176px;
   --nplot-resize-hit: 10px;
   --nplot-matrix-cell: 26px;
+  --nplot-lines-column-width: 248px;
+  --nplot-lines-scenes-width: 232px;
 
   /* Radius & Shadows */
   --nplot-radius-sm: 4px;
@@ -1410,4 +1412,394 @@ body[data-resizing="nw"], body[data-resizing="se"] { cursor: nwse-resize; }
 
 .nplot-canvas-column > .nplot-parse-error {
   position: absolute;
+}
+
+/* ==========================================================================
+   セリフ棚（書き溜めセリフ）ビュー
+   ========================================================================== */
+.nplot-lines-view {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: var(--nplot-canvas-bg);
+  color: var(--nplot-text-main);
+}
+.nplot-lines-view.is-hidden {
+  display: none;
+}
+.nplot-lines-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--nplot-space-2) var(--nplot-space-3);
+  gap: var(--nplot-space-2);
+}
+.nplot-lines-capture {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nplot-space-2);
+}
+.nplot-lines-speaker {
+  flex: none;
+  max-width: 160px;
+  padding-block: 5px;
+}
+.nplot-lines-capture-input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  font-size: var(--nplot-font-size-md);
+  line-height: 1.5;
+  padding: 4px 8px;
+}
+.nplot-lines-capture-input:focus,
+.nplot-line-edit:focus,
+.nplot-inspector-line-input:focus {
+  outline: 1px solid var(--nplot-accent-focus);
+  outline-offset: 0;
+}
+.nplot-lines-filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nplot-space-2);
+}
+.nplot-lines-help {
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+}
+.nplot-lines-focus-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nplot-space-1);
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-accent-focus);
+  border: 1px solid var(--nplot-accent-focus);
+  border-radius: var(--nplot-radius-sm);
+  padding: 1px 2px 1px 7px;
+}
+.nplot-lines-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--nplot-text-muted);
+  cursor: pointer;
+  font-size: var(--nplot-font-size-sm);
+  padding: 0 4px;
+  border-radius: var(--nplot-radius-sm);
+}
+.nplot-lines-icon-btn:hover {
+  color: var(--nplot-text-main);
+  background: var(--nplot-surface-elevated);
+}
+.nplot-lines-board {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: var(--nplot-space-3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 0;
+  padding-bottom: var(--nplot-space-1);
+}
+.nplot-lines-board > .nplot-matrix-empty {
+  align-self: flex-start;
+}
+.nplot-lines-column {
+  flex: none;
+  width: var(--nplot-lines-column-width);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--nplot-surface-primary);
+  border: 1px solid var(--nplot-border-subtle);
+  border-top: 3px solid var(--nplot-node-character);
+  border-radius: var(--nplot-radius-md);
+}
+.nplot-lines-column.is-unassigned {
+  border-top-color: var(--nplot-border-strong);
+}
+.nplot-lines-column.is-drop-target {
+  border-color: var(--nplot-accent-focus);
+  box-shadow: 0 0 0 1px var(--nplot-accent-focus);
+}
+.nplot-lines-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nplot-space-1);
+  padding: var(--nplot-space-1) var(--nplot-space-2);
+  border-bottom: 1px solid var(--nplot-border-subtle);
+}
+.nplot-lines-column-name {
+  background: transparent;
+  border: none;
+  color: var(--nplot-text-main);
+  font-weight: 700;
+  font-size: var(--nplot-font-size-sm);
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nplot-lines-column-name:disabled {
+  cursor: default;
+  color: var(--nplot-text-muted);
+}
+.nplot-lines-column-name:not(:disabled):hover {
+  color: var(--nplot-accent-focus);
+}
+.nplot-lines-column-count {
+  font-family: var(--nplot-font-mono);
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+}
+.nplot-lines-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--nplot-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nplot-space-2);
+}
+.nplot-line-card {
+  background: var(--nplot-surface-secondary);
+  border: 1px solid var(--nplot-border-subtle);
+  border-left: 3px solid var(--nplot-border-strong);
+  border-radius: var(--nplot-radius-sm);
+  padding: var(--nplot-space-1) var(--nplot-space-2);
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.nplot-line-card.is-candidate {
+  border-left-color: var(--nplot-status-warning);
+}
+.nplot-line-card.is-placed {
+  border-left-color: var(--nplot-status-resolved);
+}
+.nplot-line-card.is-dragging {
+  opacity: var(--nplot-dim-opacity);
+}
+.nplot-line-card.is-new {
+  box-shadow: 0 0 0 2px var(--nplot-accent-focus);
+}
+.nplot-line-text {
+  font-size: var(--nplot-font-size-md);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.nplot-line-note {
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.nplot-line-note.is-empty {
+  opacity: 0;
+}
+.nplot-line-card:hover .nplot-line-note.is-empty {
+  opacity: 0.7;
+}
+.nplot-line-edit {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font-size: var(--nplot-font-size-sm);
+  line-height: 1.5;
+}
+.nplot-line-scenes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.nplot-line-scenes:empty {
+  display: none;
+}
+.nplot-line-scene-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  font-size: 10px;
+  border-radius: var(--nplot-radius-sm);
+  border: 1px solid var(--nplot-border-subtle);
+  background: var(--nplot-surface-primary);
+  overflow: hidden;
+}
+.nplot-line-scene-chip.is-placed {
+  border-color: var(--nplot-status-resolved);
+}
+.nplot-line-scene-chip.is-candidate {
+  border-style: dashed;
+}
+.nplot-line-scene-chip button {
+  background: transparent;
+  border: none;
+  color: var(--nplot-text-main);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 1px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nplot-line-scene-chip button:hover {
+  background: var(--nplot-surface-elevated);
+}
+.nplot-line-scene-chip .nplot-line-scene-chip-remove {
+  color: var(--nplot-text-muted);
+  flex: none;
+  border-left: 1px solid var(--nplot-border-subtle);
+}
+.nplot-line-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--nplot-space-1);
+}
+.nplot-line-status {
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: var(--nplot-radius-sm);
+  border: 1px solid var(--nplot-border-subtle);
+  color: var(--nplot-text-muted);
+  flex: none;
+}
+.nplot-line-status.is-candidate {
+  color: var(--nplot-status-warning);
+  border-color: var(--nplot-status-warning);
+}
+.nplot-line-status.is-placed {
+  color: var(--nplot-status-resolved);
+  border-color: var(--nplot-status-resolved);
+}
+.nplot-line-add-scene {
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  padding: 0 4px;
+}
+.nplot-line-delete {
+  margin-left: auto;
+  opacity: 0;
+}
+.nplot-line-card:hover .nplot-line-delete {
+  opacity: 1;
+}
+
+/* 右側：シーン一覧（ドロップ先） */
+.nplot-lines-scenes {
+  flex: none;
+  width: var(--nplot-lines-scenes-width);
+  overflow-y: auto;
+  border-left: 1px solid var(--nplot-border-subtle);
+  background: var(--nplot-surface-primary);
+  padding: var(--nplot-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.nplot-lines-scene-chapter {
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+  margin-top: var(--nplot-space-2);
+  padding-left: 2px;
+}
+.nplot-lines-scene {
+  display: flex;
+  align-items: center;
+  gap: var(--nplot-space-2);
+  width: 100%;
+  text-align: left;
+  background: var(--nplot-surface-secondary);
+  border: 1px solid var(--nplot-border-subtle);
+  border-left: 3px solid var(--nplot-node-scene);
+  border-radius: var(--nplot-radius-sm);
+  color: var(--nplot-text-main);
+  font-size: var(--nplot-font-size-xs);
+  padding: 5px var(--nplot-space-2);
+  cursor: pointer;
+}
+.nplot-lines-scene .nplot-matrix-scene-num {
+  display: inline;
+  margin: 0;
+  color: var(--nplot-text-muted);
+}
+.nplot-lines-scene:hover {
+  border-color: var(--nplot-border-strong);
+}
+.nplot-lines-scene.is-focused {
+  border-color: var(--nplot-accent-focus);
+  box-shadow: 0 0 0 1px var(--nplot-accent-focus);
+}
+.nplot-lines-scene.is-drop-target {
+  background: var(--nplot-marquee-fill);
+  border-color: var(--nplot-accent-focus);
+}
+.nplot-lines-view.is-line-dragging .nplot-lines-scene {
+  border-style: dashed;
+}
+.nplot-lines-scene-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nplot-lines-scene-counts {
+  flex: none;
+  font-family: var(--nplot-font-mono);
+  color: var(--nplot-text-muted);
+}
+.nplot-lines-scene.is-empty .nplot-lines-scene-counts {
+  opacity: 0.6;
+}
+
+/* キャンバスのカード上の件数チップ */
+.nplot-chip.nplot-chip-lines {
+  cursor: pointer;
+  font-family: var(--nplot-font-sans);
+}
+.nplot-chip.nplot-chip-lines:hover {
+  color: var(--nplot-text-main);
+  border-color: var(--nplot-border-strong);
+}
+
+/* インスペクタのセリフ欄 */
+.nplot-inspector-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nplot-space-1);
+}
+.nplot-inspector-line {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 6px;
+  background: var(--nplot-surface-secondary);
+  border-left: 3px solid var(--nplot-status-warning);
+  border-radius: var(--nplot-radius-sm);
+}
+.nplot-inspector-line.is-placed {
+  border-left-color: var(--nplot-status-resolved);
+}
+.nplot-inspector-line-text {
+  font-size: var(--nplot-font-size-xs);
+  line-height: 1.5;
+  word-break: break-word;
+}
+.nplot-inspector-line-text.is-recent {
+  color: var(--nplot-text-muted);
+}
+.nplot-inspector-line-actions {
+  display: flex;
+  gap: var(--nplot-space-1);
+}
+.nplot-inspector-line-input {
+  resize: vertical;
+  font-size: var(--nplot-font-size-sm);
+  line-height: 1.5;
 }

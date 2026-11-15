@@ -50,6 +50,11 @@ const VIEW_MODES: { mode: EditorViewMode; label: string; title: string }[] = [
     label: '登場表',
     title: 'キャラクター × シーンの登場表（視点人物・不在区間の確認、クリックで登場を付け外し）',
   },
+  {
+    mode: 'lines',
+    label: 'セリフ棚',
+    title: 'キャラクターごとに書き溜めたセリフを一覧し、シーンへ配置（候補・確定）する',
+  },
   { mode: 'json', label: '{ } JSON', title: 'JSONソース表示・編集' },
 ];
 

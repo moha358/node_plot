@@ -95,6 +95,7 @@ function bootstrap(): void {
   canvasCol.className = 'nplot-canvas-column';
   canvasCol.appendChild(controller.canvasViewport.viewportElement);
   canvasCol.appendChild(controller.matrixView.element);
+  canvasCol.appendChild(controller.lineShelfView.element);
   canvasCol.appendChild(controller.jsonViewElement);
   canvasCol.appendChild(controller.parseErrorElement);
   canvasCol.appendChild(controller.outlinePanel.element);

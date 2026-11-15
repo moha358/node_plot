@@ -78,6 +78,34 @@ export function removeLine(doc: PlotDocument, lineId: string): PlotDocument {
   );
 }
 
+/**
+ * セリフの並び順を変える（`doc.lines` の配列順がそのまま会話順・列内の順になる）。
+ * `targetLineId` のセリフの前（before）または後（after）へ移す。
+ */
+export function moveLine(
+  doc: PlotDocument,
+  lineId: string,
+  targetLineId: string,
+  position: 'before' | 'after'
+): PlotDocument {
+  if (lineId === targetLineId) {
+    return doc;
+  }
+  const lines = getLines(doc);
+  const moving = lines.find((l) => l.id === lineId);
+  if (!moving || !lines.some((l) => l.id === targetLineId)) {
+    return doc;
+  }
+  const rest = lines.filter((l) => l.id !== lineId);
+  const targetIdx = rest.findIndex((l) => l.id === targetLineId);
+  const insertAt = position === 'before' ? targetIdx : targetIdx + 1;
+  const next = [...rest.slice(0, insertAt), moving, ...rest.slice(insertAt)];
+  if (next.every((l, i) => l === lines[i])) {
+    return doc;
+  }
+  return withLines(doc, next);
+}
+
 function mapLine(doc: PlotDocument, lineId: string, fn: (l: PlotLine) => PlotLine): PlotDocument {
   return withLines(
     doc,

@@ -10,6 +10,7 @@ import {
   findCharacterByName,
   findSceneByManuscriptFile,
   getLineStatus,
+  moveLine,
   groupLinesBySpeaker,
   parseLineCaptureText,
   parseSpeakerSwitch,
@@ -237,5 +238,17 @@ describe('セリフ棚（書き溜めセリフ）', () => {
         ['四つ目\nその続き', ''],
       ]
     );
+  });
+
+  it('セリフを別のセリフの前後へ移して順番を入れ替える', () => {
+    const doc = addLines(createInitialPlotDocument(), ['a', 'b', 'c', 'd'].map((id) => createLine({ id, text: id })));
+    const order = (d: PlotDocument) => d.lines!.map((l) => l.id).join('');
+    assert.equal(order(moveLine(doc, 'd', 'a', 'before')), 'dabc');
+    assert.equal(order(moveLine(doc, 'a', 'c', 'after')), 'bcad');
+    assert.equal(order(moveLine(doc, 'c', 'b', 'before')), 'acbd');
+    // 変化のない移動・存在しない ID は同じドキュメントを返す
+    assert.equal(moveLine(doc, 'a', 'b', 'before'), doc);
+    assert.equal(moveLine(doc, 'a', 'a', 'after'), doc);
+    assert.equal(moveLine(doc, 'x', 'a', 'after'), doc);
   });
 });

@@ -8,6 +8,7 @@ import {
   getLines,
   getOrderedScenes,
   groupLinesBySpeaker,
+  moveLine,
   parseLineCaptureText,
   placeLine,
   removeLine,
@@ -271,7 +272,7 @@ export class LineShelfView {
 
     const help = document.createElement('span');
     help.className = 'nplot-lines-help';
-    help.textContent = 'カードを右のシーンへドラッグで候補に（Shift+ドロップで確定）・別の列へドラッグで話者変更・本文ダブルクリックで編集';
+    help.textContent = 'カードを別のカードの上下へドラッグで並べ替え・右のシーンへドラッグで候補に（Shift+ドロップで確定）・別の列へドラッグで話者変更・シーンをクリックで会話順表示・本文ダブルクリックで編集';
     this.filterBar.appendChild(help);
   }
 
@@ -310,6 +311,13 @@ export class LineShelfView {
     const sceneTitles = new Map(
       doc.nodes.filter((n) => n.category === 'scene').map((n) => [n.id, n.title])
     );
+
+    if (this.focusSceneId) {
+      this.renderConversationColumn(doc, sceneIds, sceneTitles);
+      this.board.scrollLeft = scrollLeft;
+      this.highlightLineIds.clear();
+      return;
+    }
 
     for (const column of groupLinesBySpeaker(doc)) {
       const speakerId = column.speaker?.id ?? UNASSIGNED_SPEAKER;
@@ -355,7 +363,7 @@ export class LineShelfView {
       const list = document.createElement('div');
       list.className = 'nplot-lines-list';
       for (const line of visible) {
-        list.appendChild(this.createLineCard(doc, line, sceneIds, sceneTitles));
+        list.appendChild(this.createLineCard(doc, line, sceneIds, sceneTitles, { columnSpeakerId: speakerId }));
       }
 
       this.attachDropTarget(col, (lineId) => {
@@ -380,11 +388,61 @@ export class LineShelfView {
     this.highlightLineIds.clear();
   }
 
+  /**
+   * シーン絞り込み時の「会話順」表示：話者混在の 1 列に配列順で並べ、ドラッグで順番を入れ替える。
+   */
+  private renderConversationColumn(
+    doc: PlotDocument,
+    sceneIds: ReadonlySet<string>,
+    sceneTitles: Map<string, string>
+  ): void {
+    const scene = doc.nodes.find((n) => n.id === this.focusSceneId);
+    const speakers = new Map(doc.nodes.filter((n) => n.category === 'character').map((n) => [n.id, n]));
+    const all = getLines(doc).filter(
+      (l) => l.placedSceneId === this.focusSceneId || l.candidateSceneIds.includes(this.focusSceneId!)
+    );
+    const visible = all.filter((l) => this.lineVisible(l, sceneIds));
+
+    const col = document.createElement('div');
+    col.className = 'nplot-lines-column is-conversation';
+    const head = document.createElement('div');
+    head.className = 'nplot-lines-column-head';
+    const name = document.createElement('span');
+    name.className = 'nplot-lines-column-name';
+    name.textContent = `会話順：${scene?.title ?? ''}`;
+    const count = document.createElement('span');
+    count.className = 'nplot-lines-column-count';
+    count.textContent = visible.length === all.length ? String(all.length) : `${visible.length} / ${all.length}`;
+    head.append(name, count);
+
+    const list = document.createElement('div');
+    list.className = 'nplot-lines-list';
+    if (visible.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'nplot-help';
+      empty.textContent =
+        'このシーンのセリフはまだありません。上の入力欄で書き留めるとこのシーンの候補になります。絞り込みを解除すると、話者ごとの列からドラッグで追加できます。';
+      list.appendChild(empty);
+    }
+    for (const line of visible) {
+      list.appendChild(
+        this.createLineCard(doc, line, sceneIds, sceneTitles, {
+          speakerLabel: speakerDisplayName(speakers.get(line.speakerId)),
+        })
+      );
+    }
+    col.append(head, list);
+    this.board.appendChild(col);
+    const firstNew = list.querySelector<HTMLElement>('.nplot-line-card.is-new');
+    firstNew?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+
   private createLineCard(
     doc: PlotDocument,
     line: PlotLine,
     sceneIds: ReadonlySet<string>,
-    sceneTitles: Map<string, string>
+    sceneTitles: Map<string, string>,
+    opts: { columnSpeakerId?: string; speakerLabel?: string } = {}
   ): HTMLElement {
     const status = getLineStatus(line, sceneIds);
     const card = document.createElement('div');
@@ -409,6 +467,14 @@ export class LineShelfView {
       card.classList.remove('is-dragging');
       this.element.classList.remove('is-line-dragging');
     });
+    this.attachReorderTarget(doc, card, line.id, opts.columnSpeakerId);
+
+    if (opts.speakerLabel !== undefined) {
+      const who = document.createElement('div');
+      who.className = 'nplot-line-speaker';
+      who.textContent = opts.speakerLabel;
+      card.appendChild(who);
+    }
 
     const text = document.createElement('div');
     text.className = 'nplot-line-text';
@@ -659,6 +725,60 @@ export class LineShelfView {
       this.sceneLane.appendChild(item);
     });
     this.sceneLane.scrollTop = scrollTop;
+  }
+
+  /**
+   * カードの上へのドロップで並べ替える。上半分なら前、下半分なら後ろへ入れる。
+   * 話者列のカードへ落とした場合は、話者もその列のキャラクターに変える。
+   */
+  private attachReorderTarget(
+    doc: PlotDocument,
+    card: HTMLElement,
+    targetLineId: string,
+    columnSpeakerId: string | undefined
+  ): void {
+    const positionOf = (e: DragEvent): 'before' | 'after' => {
+      const rect = card.getBoundingClientRect();
+      return e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+    };
+    const clear = () => card.classList.remove('is-drop-before', 'is-drop-after');
+    card.addEventListener('dragover', (e) => {
+      if (!this.draggingLineId || this.draggingLineId === targetLineId) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = 'move';
+      }
+      const pos = positionOf(e);
+      card.classList.toggle('is-drop-before', pos === 'before');
+      card.classList.toggle('is-drop-after', pos === 'after');
+    });
+    card.addEventListener('dragleave', (e) => {
+      if (!(e.relatedTarget instanceof Node) || !card.contains(e.relatedTarget)) {
+        clear();
+      }
+    });
+    card.addEventListener('drop', (e) => {
+      clear();
+      const lineId = e.dataTransfer?.getData(LINE_DRAG_MIME) || this.draggingLineId;
+      if (!lineId || lineId === targetLineId) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      this.draggingLineId = null;
+      let next = doc;
+      const moving = getLines(doc).find((l) => l.id === lineId);
+      if (columnSpeakerId !== undefined && moving && moving.speakerId !== columnSpeakerId) {
+        next = updateLine(next, lineId, { speakerId: columnSpeakerId });
+      }
+      next = moveLine(next, lineId, targetLineId, positionOf(e));
+      if (next !== doc) {
+        this.callbacks.onDocumentMutated(next);
+      }
+    });
   }
 
   private attachDropTarget(el: HTMLElement, onDrop: (lineId: string, e: DragEvent) => void): void {

@@ -1803,3 +1803,37 @@ body[data-resizing="nw"], body[data-resizing="se"] { cursor: nwse-resize; }
   font-size: var(--nplot-font-size-sm);
   line-height: 1.5;
 }
+
+/* セリフの並べ替え（カードの上下に挿入位置を表示） */
+.nplot-line-card {
+  position: relative;
+}
+.nplot-line-card.is-drop-before::before,
+.nplot-line-card.is-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--nplot-accent-focus);
+  border-radius: var(--nplot-radius-sm);
+  pointer-events: none;
+}
+.nplot-line-card.is-drop-before::before {
+  top: calc(-1 * var(--nplot-space-1) - 1px);
+}
+.nplot-line-card.is-drop-after::after {
+  bottom: calc(-1 * var(--nplot-space-1) - 1px);
+}
+.nplot-lines-column.is-conversation {
+  width: auto;
+  flex: 1;
+  max-width: calc(var(--nplot-lines-column-width) * 2.4);
+  border-top-color: var(--nplot-node-scene);
+}
+.nplot-line-speaker {
+  font-size: var(--nplot-font-size-xs);
+  font-weight: 700;
+  color: var(--nplot-node-character);
+}
+

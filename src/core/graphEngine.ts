@@ -1,3 +1,4 @@
+import { detachLinesFromNodes } from './lineShelf';
 import {
   EdgeLineStyle,
   NodeCategory,
@@ -282,11 +283,7 @@ export function connectSockets(
 }
 
 export function removeNode(doc: PlotDocument, nodeId: string): PlotDocument {
-  return {
-    ...doc,
-    nodes: doc.nodes.filter((n) => n.id !== nodeId),
-    edges: doc.edges.filter((e) => e.fromNodeId !== nodeId && e.toNodeId !== nodeId),
-  };
+  return removeNodes(doc, [nodeId]);
 }
 
 export function removeEdge(doc: PlotDocument, edgeId: string): PlotDocument {
@@ -345,11 +342,14 @@ export function removeNodes(doc: PlotDocument, nodeIds: Iterable<string>): PlotD
   if (ids.size === 0) {
     return doc;
   }
-  return {
-    ...doc,
-    nodes: doc.nodes.filter((n) => !ids.has(n.id)),
-    edges: doc.edges.filter((e) => !ids.has(e.fromNodeId) && !ids.has(e.toNodeId)),
-  };
+  return detachLinesFromNodes(
+    {
+      ...doc,
+      nodes: doc.nodes.filter((n) => !ids.has(n.id)),
+      edges: doc.edges.filter((e) => !ids.has(e.fromNodeId) && !ids.has(e.toNodeId)),
+    },
+    ids
+  );
 }
 
 /** 種別変更（昇格）で外れてしまう接続線の本数。UIでの事前通知に使う。 */

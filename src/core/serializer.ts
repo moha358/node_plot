@@ -9,6 +9,7 @@ import {
   PlotDocument,
   PlotEdge,
   PlotFrame,
+  PlotLine,
   PlotNode,
   PlotSocket,
   SceneStatus,
@@ -348,6 +349,38 @@ function sanitizeNode(raw: unknown, idx: number): PlotNode | null {
   return node;
 }
 
+function sanitizeLine(raw: unknown, idx: number): PlotLine | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const obj = raw as Record<string, unknown>;
+  const text = asString(obj.text);
+  if (!text.trim()) {
+    return null;
+  }
+  const placed = asString(obj.placedSceneId).trim();
+  const candidates = Array.isArray(obj.candidateSceneIds)
+    ? [
+        ...new Set(
+          obj.candidateSceneIds.filter(
+            (id): id is string => typeof id === 'string' && id.trim().length > 0 && id !== placed
+          )
+        ),
+      ]
+    : [];
+  const line: PlotLine = {
+    id: asString(obj.id, `line_${idx}`).trim() || `line_${idx}`,
+    speakerId: asString(obj.speakerId).trim(),
+    text,
+    note: asString(obj.note),
+    candidateSceneIds: candidates,
+  };
+  if (placed) {
+    line.placedSceneId = placed;
+  }
+  return line;
+}
+
 export type PlotParseResult =
   | { ok: true; document: PlotDocument; isEmpty: boolean }
   | { ok: false; error: string };
@@ -468,6 +501,20 @@ function normalizePlotObject(parsed: Record<string, unknown>): PlotDocument {
       });
     }
 
+    // セリフ：参照先ノードが無くても ID は保持する（表示・集計側で無効扱い）。未使用なら省略し既存ファイルを変えない。
+    let lines: PlotLine[] | undefined;
+    if (Array.isArray(parsed.lines)) {
+      lines = [];
+      const seenLineIds = new Set<string>();
+      parsed.lines.forEach((rawLine, idx) => {
+        const l = sanitizeLine(rawLine, idx);
+        if (l && !seenLineIds.has(l.id)) {
+          seenLineIds.add(l.id);
+          lines!.push(l);
+        }
+      });
+    }
+
     const rawVp =
       parsed.viewport && typeof parsed.viewport === 'object'
         ? (parsed.viewport as Record<string, unknown>)
@@ -485,6 +532,7 @@ function normalizePlotObject(parsed: Record<string, unknown>): PlotDocument {
       nodes,
       edges,
       frames,
+      ...(lines ? { lines } : {}),
     };
   }
 }

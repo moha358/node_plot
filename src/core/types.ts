@@ -10,7 +10,7 @@ export type EdgeLineStyle = 'solid' | 'dashed';
 
 export type PlotThemeMode = 'dark' | 'light' | 'sepia';
 
-export type EditorViewMode = 'node' | 'matrix' | 'json';
+export type EditorViewMode = 'node' | 'matrix' | 'lines' | 'json';
 
 /** 全ノード共通の確定度（執筆ステータスとは別軸）。未設定は undefined。 */
 export type NodeCertainty = 'decided' | 'proposed' | 'unsorted';
@@ -105,6 +105,25 @@ export interface PlotFrame {
   colorTag?: FrameColor;
 }
 
+/**
+ * 書き溜めたセリフ（どこにハマるか未定のものを含む）。キャンバスのノードとは別に保持する。
+ * 配置状態は保持せず `placedSceneId` / `candidateSceneIds` から導出する（lineShelf.getLineStatus）。
+ */
+export interface PlotLine {
+  id: string;
+  /** 発話するキャラクターノードの ID。空文字は「話者未定」。 */
+  speakerId: string;
+  text: string;
+  /** 言い方・状況・誰に向けた言葉かなどのメモ */
+  note: string;
+  /** はまりそうなシーン（複数可）。placedSceneId は含めない。 */
+  candidateSceneIds: string[];
+  /** 確定した配置先シーン */
+  placedSceneId?: string;
+}
+
+export type LineStatus = 'placed' | 'candidate' | 'unplaced';
+
 export interface ViewportState {
   panX: number;
   panY: number;
@@ -119,6 +138,8 @@ export interface PlotDocument {
   nodes: PlotNode[];
   edges: PlotEdge[];
   frames: PlotFrame[];
+  /** 書き溜めセリフ。未使用のファイルでは省略される（後方互換）。 */
+  lines?: PlotLine[];
 }
 
 export interface PlotConfig {

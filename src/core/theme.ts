@@ -1,4 +1,4 @@
-import { NodeCategory, PlotConfig, PlotThemeMode, SocketDataType } from './types';
+import { NodeCategory, NodeCertainty, PlotConfig, PlotThemeMode, SocketDataType } from './types';
 
 export const DEFAULT_PLOT_CONFIG: PlotConfig = {
   enabled: false,
@@ -107,3 +107,29 @@ export function sanitizePlotConfig(input: Partial<Record<keyof PlotConfig, unkno
     gridSize,
   };
 }
+
+export interface CertaintyMeta {
+  certainty: NodeCertainty;
+  label: string;
+  description: string;
+}
+
+export const CERTAINTY_META: Record<NodeCertainty, CertaintyMeta> = {
+  decided: { certainty: 'decided', label: '決定', description: '採用が決まった要素（実線の枠）' },
+  proposed: { certainty: 'proposed', label: '案', description: '検討中の候補（破線の枠）' },
+  unsorted: { certainty: 'unsorted', label: '未整理', description: 'まだ構成に組み込んでいない断片（点線・半透明）' },
+};
+
+export const CERTAINTY_ORDER: readonly NodeCertainty[] = ['decided', 'proposed', 'unsorted'];
+
+/** タグ名から確定度を推定するための別名表（一括変換用）。 */
+export const CERTAINTY_TAG_ALIASES: Readonly<Record<string, NodeCertainty>> = {
+  決定: 'decided',
+  確定: 'decided',
+  案: 'proposed',
+  仮: 'proposed',
+  候補: 'proposed',
+  未統合: 'unsorted',
+  未整理: 'unsorted',
+  保留: 'unsorted',
+};

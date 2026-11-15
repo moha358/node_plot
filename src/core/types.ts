@@ -10,7 +10,22 @@ export type EdgeLineStyle = 'solid' | 'dashed';
 
 export type PlotThemeMode = 'dark' | 'light' | 'sepia';
 
-export type EditorViewMode = 'node' | 'json';
+export type EditorViewMode = 'node' | 'matrix' | 'json';
+
+/** 全ノード共通の確定度（執筆ステータスとは別軸）。未設定は undefined。 */
+export type NodeCertainty = 'decided' | 'proposed' | 'unsorted';
+
+/** グループ枠の塗り色トークン名（実際の色は globalTheme.css の --nplot-frame-color-* で定義）。 */
+export type FrameColor =
+  | 'none'
+  | 'gray'
+  | 'blue'
+  | 'teal'
+  | 'green'
+  | 'amber'
+  | 'orange'
+  | 'rose'
+  | 'violet';
 
 export interface PlotSocket {
   id: string;
@@ -59,6 +74,7 @@ export interface PlotNode {
   y: number;
   width?: number;
   colorTag?: string;
+  certainty?: NodeCertainty;
   tags: string[];
   sockets: PlotSocket[];
   sceneParams?: SceneParameters;
@@ -86,7 +102,7 @@ export interface PlotFrame {
   y: number;
   width: number;
   height: number;
-  colorTag?: string;
+  colorTag?: FrameColor;
 }
 
 export interface ViewportState {

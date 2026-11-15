@@ -1,7 +1,10 @@
+import { FRAME_COLORS, clampNodeWidth } from './frameLayout';
 import { getDefaultSocketsForCategory } from './graphEngine';
 import {
   CustomParamEntry,
   EdgeLineStyle,
+  FrameColor,
+  NodeCertainty,
   NodeCategory,
   PlotDocument,
   PlotEdge,
@@ -34,6 +37,8 @@ const VALID_SCENE_STATUS: ReadonlySet<SceneStatus> = new Set([
   'written',
 ]);
 const VALID_EDGE_STYLES: ReadonlySet<EdgeLineStyle> = new Set(['solid', 'dashed']);
+const VALID_CERTAINTY: ReadonlySet<NodeCertainty> = new Set(['decided', 'proposed', 'unsorted']);
+const VALID_FRAME_COLORS: ReadonlySet<string> = new Set(FRAME_COLORS);
 
 /**
  * 新規プロットファイル用のサンプル初期ドキュメントを生成する。
@@ -278,6 +283,13 @@ function sanitizeNode(raw: unknown, idx: number): PlotNode | null {
     customParams,
   };
 
+  if (typeof obj.width === 'number' && Number.isFinite(obj.width)) {
+    node.width = clampNodeWidth(obj.width);
+  }
+  if (VALID_CERTAINTY.has(obj.certainty as NodeCertainty)) {
+    node.certainty = obj.certainty as NodeCertainty;
+  }
+
   if (obj.sceneParams && typeof obj.sceneParams === 'object') {
     const sp = obj.sceneParams as Record<string, unknown>;
     const status = VALID_SCENE_STATUS.has(sp.status as SceneStatus)
@@ -448,7 +460,10 @@ function normalizePlotObject(parsed: Record<string, unknown>): PlotDocument {
           y: Math.round(asNumber(f.y, 60)),
           width: Math.round(asNumber(f.width, 480, 120, 10000)),
           height: Math.round(asNumber(f.height, 320, 100, 10000)),
-          colorTag: typeof f.colorTag === 'string' ? f.colorTag : undefined,
+          colorTag:
+            typeof f.colorTag === 'string' && VALID_FRAME_COLORS.has(f.colorTag) && f.colorTag !== 'none'
+              ? (f.colorTag as FrameColor)
+              : undefined,
         });
       });
     }

@@ -61,6 +61,11 @@ function bootstrap(): void {
           type: 'REQUEST_RESTORE_BACKUP',
         });
       },
+      openInTextEditor: () => {
+        vscode.postMessage({
+          type: 'OPEN_IN_TEXT_EDITOR',
+        });
+      },
     }
   );
 
@@ -70,6 +75,7 @@ function bootstrap(): void {
   const canvasCol = document.createElement('div');
   canvasCol.className = 'nplot-canvas-column';
   canvasCol.appendChild(controller.canvasViewport.viewportElement);
+  canvasCol.appendChild(controller.jsonViewElement);
   canvasCol.appendChild(controller.outlinePanel.element);
 
   mainArea.appendChild(canvasCol);

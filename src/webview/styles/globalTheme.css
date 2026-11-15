@@ -665,3 +665,96 @@ body {
   box-shadow: 0 0 0 2px var(--nplot-status-warning), var(--nplot-shadow-card);
 }
 
+/* Segmented View Mode Switch (Node ⇔ JSON) */
+.nplot-view-switch {
+  display: inline-flex;
+  align-items: center;
+  background: var(--nplot-surface-secondary);
+  border: 1px solid var(--nplot-border-subtle);
+  border-radius: var(--nplot-radius-sm);
+  padding: 1px;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.nplot-view-switch-btn {
+  background: transparent;
+  color: var(--nplot-text-muted);
+  border: none;
+  border-radius: var(--nplot-radius-sm);
+  padding: 2px 7px;
+  font-size: var(--nplot-font-size-xs);
+  line-height: 1.35;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nplot-view-switch-btn:hover {
+  color: var(--nplot-text-main);
+}
+
+.nplot-view-switch-btn.is-active {
+  background: var(--nplot-surface-elevated);
+  color: var(--nplot-accent-focus);
+  font-weight: 700;
+}
+
+/* Inline JSON Editor View */
+.nplot-json-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--nplot-canvas-bg);
+  overflow: hidden;
+}
+
+.nplot-json-view.is-hidden {
+  display: none;
+}
+
+.nplot-canvas-viewport.is-hidden {
+  display: none;
+}
+
+.nplot-json-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nplot-space-2);
+  padding: var(--nplot-space-1) var(--nplot-space-3);
+  background: var(--nplot-surface-secondary);
+  border-bottom: 1px solid var(--nplot-border-subtle);
+  font-size: var(--nplot-font-size-xs);
+}
+
+.nplot-json-status {
+  font-family: var(--nplot-font-mono);
+  font-size: var(--nplot-font-size-xs);
+  color: var(--nplot-text-muted);
+}
+
+.nplot-json-status.is-valid {
+  color: var(--nplot-status-resolved);
+}
+
+.nplot-json-status.is-error {
+  color: var(--nplot-status-unresolved);
+}
+
+.nplot-json-editor {
+  flex: 1;
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: var(--nplot-space-3);
+  background: var(--nplot-canvas-bg);
+  color: var(--nplot-text-main);
+  font-family: var(--nplot-font-mono);
+  font-size: var(--nplot-font-size-sm);
+  line-height: 1.55;
+  tab-size: 2;
+  user-select: text;
+}
+
+

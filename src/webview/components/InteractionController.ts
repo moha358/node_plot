@@ -5,7 +5,9 @@ import {
   removeEdge,
   removeNode,
 } from '../../core/graphEngine';
+import { parsePlotDocument, serializePlotDocument } from '../../core/serializer';
 import {
+  EditorViewMode,
   NodeCategory,
   PlotConfig,
   PlotDocument,
@@ -25,6 +27,7 @@ export interface InteractionHostBridge {
   openManuscript: (node: PlotNode, createIfMissing: boolean) => void;
   requestExport: (format: 'markdown' | 'sync_genkou') => void;
   requestRestoreBackup: () => void;
+  openInTextEditor: () => void;
 }
 
 export class InteractionController {
@@ -35,6 +38,7 @@ export class InteractionController {
   private selectedEdgeId: string | null = null;
   private selectedFrameId: string | null = null;
   private filterQuery = '';
+  private viewMode: EditorViewMode = 'node';
   private showOutlineDrawer = false;
   private showInspector = true;
   private traceModeEnabled = false;
@@ -44,6 +48,9 @@ export class InteractionController {
 
   public readonly toolbar: Toolbar;
   public readonly canvasViewport: CanvasViewport;
+  public readonly jsonViewElement: HTMLElement;
+  private readonly jsonTextarea: HTMLTextAreaElement;
+  private readonly jsonStatusEl: HTMLElement;
   public readonly inspectorPanel: InspectorPanel;
   public readonly outlinePanel: OutlinePanel;
 
@@ -56,11 +63,28 @@ export class InteractionController {
     this.config = initialConfig;
 
     this.toolbar = new Toolbar({
-      onAddNode: (cat) => this.addNodeAtViewportCenter(cat),
-      onAddFrame: () => this.addFrameAtViewportCenter(),
+      onAddNode: (cat) => {
+        if (this.viewMode !== 'node') {
+          this.viewMode = 'node';
+        }
+        this.addNodeAtViewportCenter(cat);
+      },
+      onAddFrame: () => {
+        if (this.viewMode !== 'node') {
+          this.viewMode = 'node';
+        }
+        this.addFrameAtViewportCenter();
+      },
       onFilterChange: (q) => {
         this.filterQuery = q;
         this.renderCanvasOnly();
+      },
+      onChangeViewMode: (mode) => {
+        if (this.viewMode === mode) {
+          return;
+        }
+        this.viewMode = mode;
+        this.renderAll();
       },
       onToggleOutlineDrawer: () => {
         this.showOutlineDrawer = !this.showOutlineDrawer;
@@ -84,6 +108,70 @@ export class InteractionController {
       onSyncGenkou: () => this.bridge.requestExport('sync_genkou'),
       onRestoreBackup: () => this.bridge.requestRestoreBackup(),
     });
+
+    this.jsonViewElement = document.createElement('section');
+    this.jsonViewElement.className = 'nplot-json-view is-hidden';
+
+    const jsonHeader = document.createElement('div');
+    jsonHeader.className = 'nplot-json-header';
+
+    this.jsonStatusEl = document.createElement('span');
+    this.jsonStatusEl.className = 'nplot-json-status is-valid';
+    this.jsonStatusEl.textContent = '✓ JSON構文: 正常';
+
+    const jsonActions = document.createElement('div');
+    jsonActions.className = 'nplot-toolbar-group';
+
+    const formatBtn = document.createElement('button');
+    formatBtn.className = 'nplot-btn';
+    formatBtn.textContent = 'JSON整形';
+    formatBtn.title = '現在のプロット構造でJSONを綺麗にインデント整形';
+    formatBtn.addEventListener('click', () => {
+      this.jsonTextarea.value = serializePlotDocument(this.doc);
+      this.jsonStatusEl.className = 'nplot-json-status is-valid';
+      this.jsonStatusEl.textContent = '✓ JSON構文: 整形済み';
+    });
+
+    const nativeEditorBtn = document.createElement('button');
+    nativeEditorBtn.className = 'nplot-btn';
+    nativeEditorBtn.textContent = 'VS Code標準エディタで開く';
+    nativeEditorBtn.title = 'VS Code標準のJSONテキストエディタに切り替えて開く';
+    nativeEditorBtn.addEventListener('click', () => this.bridge.openInTextEditor());
+
+    jsonActions.appendChild(formatBtn);
+    jsonActions.appendChild(nativeEditorBtn);
+
+    jsonHeader.appendChild(this.jsonStatusEl);
+    jsonHeader.appendChild(jsonActions);
+
+    this.jsonTextarea = document.createElement('textarea');
+    this.jsonTextarea.className = 'nplot-json-editor';
+    this.jsonTextarea.spellcheck = false;
+    this.jsonTextarea.addEventListener('input', () => {
+      try {
+        JSON.parse(this.jsonTextarea.value);
+        const parsed = parsePlotDocument(this.jsonTextarea.value);
+        this.doc = parsed;
+        this.jsonStatusEl.className = 'nplot-json-status is-valid';
+        this.jsonStatusEl.textContent = `✓ JSON構文: 正常（ノード ${parsed.nodes.length}件・エッジ ${parsed.edges.length}件）`;
+        this.bridge.commitDocument(this.doc);
+        this.inspectorPanel.render(
+          this.doc,
+          this.showInspector,
+          this.selectedNodeId,
+          this.selectedEdgeId,
+          this.selectedFrameId
+        );
+        this.outlinePanel.render(this.doc, this.showOutlineDrawer);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.jsonStatusEl.className = 'nplot-json-status is-error';
+        this.jsonStatusEl.textContent = `⚠ JSON構文エラー: ${msg}`;
+      }
+    });
+
+    this.jsonViewElement.appendChild(jsonHeader);
+    this.jsonViewElement.appendChild(this.jsonTextarea);
 
     this.canvasViewport = new CanvasViewport({
       onSelectNode: (id) => {
@@ -288,11 +376,23 @@ export class InteractionController {
       this.doc,
       this.config,
       this.filterQuery,
+      this.viewMode,
       this.showOutlineDrawer,
       this.showInspector,
       this.traceModeEnabled
     );
-    this.renderCanvasOnly();
+    const isJsonMode = this.viewMode === 'json';
+    this.canvasViewport.viewportElement.classList.toggle('is-hidden', isJsonMode);
+    this.jsonViewElement.classList.toggle('is-hidden', !isJsonMode);
+    if (isJsonMode) {
+      if (document.activeElement !== this.jsonTextarea) {
+        this.jsonTextarea.value = serializePlotDocument(this.doc);
+        this.jsonStatusEl.className = 'nplot-json-status is-valid';
+        this.jsonStatusEl.textContent = `✓ JSON構文: 正常（ノード ${this.doc.nodes.length}件・エッジ ${this.doc.edges.length}件）`;
+      }
+    } else {
+      this.renderCanvasOnly();
+    }
     this.inspectorPanel.render(
       this.doc,
       this.showInspector,

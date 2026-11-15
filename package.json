@@ -33,6 +33,14 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "json",
+        "extensions": [
+          ".nplot"
+        ]
+      }
+    ],
     "customEditors": [
       {
         "viewType": "nodePlot.editor",
@@ -86,6 +94,16 @@
         "command": "nodePlot.refreshTree",
         "title": "Node Plot: プロット構成ツリーを更新",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "nodePlot.openAsJson",
+        "title": "Node Plot: JSONテキスト表示に切り替え",
+        "icon": "$(json)"
+      },
+      {
+        "command": "nodePlot.openAsNodeEditor",
+        "title": "Node Plot: ノード表示に切り替え",
+        "icon": "$(type-hierarchy-sub)"
       }
     ],
     "viewsContainers": {
@@ -137,9 +155,19 @@
       ],
       "editor/title": [
         {
+          "command": "nodePlot.openAsJson",
+          "when": "activeCustomEditorId == 'nodePlot.editor'",
+          "group": "navigation@1"
+        },
+        {
+          "command": "nodePlot.openAsNodeEditor",
+          "when": "resourceExtname == .nplot && activeCustomEditorId != 'nodePlot.editor'",
+          "group": "navigation@1"
+        },
+        {
           "command": "nodePlot.applyBackupInDiff",
           "when": "nodePlot.backupDiffActive",
-          "group": "navigation"
+          "group": "navigation@2"
         }
       ],
       "commandPalette": [

@@ -202,6 +202,10 @@ export class PlotEditorProvider implements vscode.CustomTextEditorProvider {
             await vscode.commands.executeCommand('nodePlot.restoreBackup');
             break;
           }
+          case 'OPEN_IN_TEXT_EDITOR': {
+            await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default');
+            break;
+          }
         }
       }
     );

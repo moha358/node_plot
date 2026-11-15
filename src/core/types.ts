@@ -10,6 +10,8 @@ export type EdgeLineStyle = 'solid' | 'dashed';
 
 export type PlotThemeMode = 'dark' | 'light' | 'sepia';
 
+export type EditorViewMode = 'node' | 'json';
+
 export interface PlotSocket {
   id: string;
   label: string;
@@ -191,6 +193,9 @@ export type WebviewToHostMessage =
     }
   | {
       type: 'REQUEST_RESTORE_BACKUP';
+    }
+  | {
+      type: 'OPEN_IN_TEXT_EDITOR';
     };
 
 export interface ComparePaneData {

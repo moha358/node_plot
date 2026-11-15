@@ -630,6 +630,30 @@ export function activate(context: vscode.ExtensionContext): void {
       outlineTreeProvider.refresh();
     }),
 
+    vscode.commands.registerCommand('nodePlot.openAsJson', async (resource?: vscode.Uri) => {
+      const targetUri =
+        resource ??
+        editorProvider.getActiveDocument()?.uri ??
+        vscode.window.activeTextEditor?.document.uri;
+      if (!targetUri) {
+        vscode.window.showInformationMessage('先にプロットファイル (.nplot) を開いてください。');
+        return;
+      }
+      await vscode.commands.executeCommand('vscode.openWith', targetUri, 'default');
+    }),
+
+    vscode.commands.registerCommand('nodePlot.openAsNodeEditor', async (resource?: vscode.Uri) => {
+      const targetUri =
+        resource ??
+        vscode.window.activeTextEditor?.document.uri ??
+        editorProvider.getActiveDocument()?.uri;
+      if (!targetUri) {
+        vscode.window.showInformationMessage('先にプロットファイル (.nplot) を開いてください。');
+        return;
+      }
+      await vscode.commands.executeCommand('vscode.openWith', targetUri, PlotEditorProvider.viewType);
+    }),
+
     vscode.commands.registerCommand('nodePlot.restoreBackup', restoreBackup),
     vscode.commands.registerCommand('nodePlot.applyBackupInDiff', applyBackupInDiff)
   );

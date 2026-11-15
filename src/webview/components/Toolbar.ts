@@ -1,11 +1,18 @@
 import { summarizePlotStats } from '../../core/plotAnalyzer';
 import { NODE_CATEGORY_META } from '../../core/theme';
-import { NodeCategory, PlotConfig, PlotDocument, PlotThemeMode } from '../../core/types';
+import {
+  EditorViewMode,
+  NodeCategory,
+  PlotConfig,
+  PlotDocument,
+  PlotThemeMode,
+} from '../../core/types';
 
 export interface ToolbarCallbacks {
   onAddNode: (category: NodeCategory) => void;
   onAddFrame: () => void;
   onFilterChange: (query: string) => void;
+  onChangeViewMode: (mode: EditorViewMode) => void;
   onToggleOutlineDrawer: () => void;
   onToggleInspector: () => void;
   onToggleTraceMode: () => void;
@@ -35,6 +42,7 @@ export class Toolbar {
     doc: PlotDocument,
     config: PlotConfig,
     filterQuery: string,
+    viewMode: EditorViewMode,
     showOutlineDrawer: boolean,
     showInspector: boolean,
     traceModeEnabled: boolean
@@ -42,9 +50,32 @@ export class Toolbar {
     const stats = summarizePlotStats(doc);
     this.element.innerHTML = '';
 
-    // Left group: Compact quick-add buttons
+    // Left group: View mode switch (Node ⇔ JSON) + Compact quick-add buttons
     const leftGroup = document.createElement('div');
     leftGroup.className = 'nplot-toolbar-group';
+
+    const viewSwitch = document.createElement('div');
+    viewSwitch.className = 'nplot-view-switch';
+
+    const nodeModeBtn = document.createElement('button');
+    nodeModeBtn.className = `nplot-view-switch-btn ${viewMode === 'node' ? 'is-active' : ''}`;
+    nodeModeBtn.textContent = 'ノード';
+    nodeModeBtn.title = 'ノードキャンバス表示に切り替え';
+    nodeModeBtn.addEventListener('click', () => this.callbacks.onChangeViewMode('node'));
+
+    const jsonModeBtn = document.createElement('button');
+    jsonModeBtn.className = `nplot-view-switch-btn ${viewMode === 'json' ? 'is-active' : ''}`;
+    jsonModeBtn.textContent = '{ } JSON';
+    jsonModeBtn.title = 'JSONソース表示・編集に切り替え';
+    jsonModeBtn.addEventListener('click', () => this.callbacks.onChangeViewMode('json'));
+
+    viewSwitch.appendChild(nodeModeBtn);
+    viewSwitch.appendChild(jsonModeBtn);
+    leftGroup.appendChild(viewSwitch);
+
+    const divider = document.createElement('span');
+    divider.className = 'nplot-toolbar-divider';
+    leftGroup.appendChild(divider);
 
     const categories: NodeCategory[] = ['note', 'scene', 'character', 'foreshadow', 'world_item'];
     for (const cat of categories) {

@@ -172,6 +172,7 @@ export function createNodeCardElement(
     const bodyEl = document.createElement('div');
     bodyEl.className = 'nplot-node-body';
     bodyEl.textContent = node.body;
+    bodyEl.title = node.body;
     card.appendChild(bodyEl);
   }
 

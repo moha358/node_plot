@@ -645,12 +645,20 @@ body[data-resizing="nw"], body[data-resizing="se"] { cursor: nwse-resize; }
 }
 
 .nplot-node-body {
-  padding: 0 var(--nplot-space-2) 6px;
+  margin: 0 var(--nplot-space-2) 6px;
+  padding: 0;
   font-size: var(--nplot-font-size-xs);
   color: var(--nplot-text-muted);
   line-height: 1.4;
   white-space: pre-wrap;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  max-height: calc(1.4em * 5);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Sockets Container (B案 Multi-Socket) */

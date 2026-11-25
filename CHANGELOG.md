@@ -2,6 +2,15 @@
 
 All notable changes to the "node-plot" extension will be documented in this file.
 
+## [0.1.4] - 2026-11-25
+
+### Added
+- Marketplace・Open VSX 公開用のスクリーンショット（ノードキャンバス・セリフ棚・登場表）および拡張機能アイコンを追加し、`README.md` を拡充。
+- GitHub Actions による VS Code Marketplace（Trusted Publishing / OIDC）・Open VSX・GitHub Release 自動公開ワークフローを追加。
+
+### Changed
+- ノードカード内の本文表示を最大 5 行に制限し、長文メモでもキャンバス上のカード高が揃うようにした。
+
 ## [0.1.3] - 2026-11-15
 
 ### Added
